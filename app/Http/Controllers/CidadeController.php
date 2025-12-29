@@ -2,74 +2,73 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Cidade;
 use App\Services\SaplService;
 
 class CidadeController extends Controller
 {
     /**
-     * Dashboard da Cidade
-     * Exibe estatísticas básicas e atalhos de busca legislativa.
-     * * @param string $cidade O slug da cidade (ex: fortaleza)
+     * Dashboard da Cidade.
+     *
+     * Exibe estatísticas básicas e entrada para busca legislativa.
+     *
+     * @param string $cidade Slug da cidade (ex: fortaleza)
      */
     public function show(string $cidade)
     {
-        $cidades = $this->getCidades();
-
-        // Verifica se a cidade existe na lista cadastrada
-        abort_unless(isset($cidades[$cidade]), 404, 'Cidade não encontrada em nossa base.');
-
-        $cidadeData = $cidades[$cidade];
-        
-        // Injetando o slug dentro da array de dados para facilitar o uso nas rotas da View
-        $cidadeData['slug'] = $cidade;
+        /** @var Cidade $cidadeModel */
+        $cidadeModel = Cidade::where('slug', $cidade)->firstOrFail();
 
         /**
-         * Estatísticas da cidade (Cache estratégico de 6 horas)
-         * Nota: Em produção, estes dados podem vir via SaplService ou consolidação de banco.
+         * Estatísticas da cidade (cache 6 horas).
+         * Nesta fase, mantemos mock parcial + dados reais onde já existem.
          */
         $stats = Cache::remember(
-            "cidade:{$cidade}:stats",
+            "cidade:{$cidadeModel->id}:stats",
             now()->addHours(6),
-            function () {
-                // Mock de dados para a Etapa 02/03. 
-                // Futuramente: Integrar com contagem real via SaplService::totalizadores()
-                return [
-                    'total_materias' => 42318,
-                    'total_leis'     => 18954,
-                    'total_autores'  => 43,
-                ];
+            function () use ($cidadeModel) {
+                try {
+                    // Base já real
+                    $totalLeis = $cidadeModel->total_leis;
+
+                    // Etapas futuras:
+                    // - total_autores via AutorResolver
+                    // - total_normas específicas
+                    return [
+                        'total_materias' => $totalLeis,
+                        'total_leis'     => $totalLeis,
+                        'total_autores'  => 0, // placeholder consciente
+                    ];
+                } catch (\Throwable $e) {
+                    logger()->warning(
+                        "Falha ao montar stats da cidade {$cidadeModel->slug}",
+                        ['error' => $e->getMessage()]
+                    );
+
+                    return [
+                        'total_materias' => 0,
+                        'total_leis'     => 0,
+                        'total_autores'  => 0,
+                    ];
+                }
             }
         );
 
+        /**
+         * Enviamos o model diretamente para a view.
+         * O accessor `brasao_url` já resolve tudo.
+         */
         return view('cidade.home', [
-            'cidade' => $cidadeData,
-            'stats'  => $stats,
+            'cidade' => [
+                'id'     => $cidadeModel->id,
+                'slug'   => $cidadeModel->slug,
+                'nome'   => $cidadeModel->nome,
+                'uf'     => $cidadeModel->uf,
+                'sapl'   => $cidadeModel->sapl,
+                'brasao' => $cidadeModel->brasao_url,
+            ],
+            'stats' => $stats,
         ]);
-    }
-
-    /**
-     * Catálogo de Cidades (Fonte de Verdade)
-     * Centraliza as configurações de integração SAPL e metadados municipais.
-     */
-    private function getCidades(): array
-    {
-        return Cache::rememberForever('cidades', function () {
-            return [
-                'fortaleza' => [
-                    'nome'   => 'Fortaleza',
-                    'uf'     => 'CE',
-                    'sapl'   => 'https://sapl.fortaleza.ce.leg.br',
-                    'brasao' => 'https://upload.wikimedia.org/wikipedia/commons/b/b5/Brasao_fortaleza.png'
-                ],
-                'sao-goncalo-do-amarante' => [
-                    'nome'   => 'São Gonçalo do Amarante',
-                    'uf'     => 'CE',
-                    'sapl'   => 'https://sapl.saogoncalodoamarante.ce.leg.br',
-                    'brasao' => null
-                ],
-            ];
-        });
     }
 }

@@ -3,28 +3,39 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use Orchid\Screen\AsSource;
 use Orchid\Filters\Filterable;
-use Illuminate\Support\Facades\Cache;
 use App\Services\SaplService;
+use Illuminate\Support\Str;
 
 class Cidade extends Model
 {
     use AsSource, Filterable;
 
+    /**
+     * Campos atribuíveis em massa.
+     */
     protected $fillable = [
         'slug',
         'nome',
         'uf',
         'sapl',
         'brasao',
-        'total_leis', // Novo campo para cache local
+        'total_leis',
     ];
 
+    /**
+     * Casts automáticos.
+     */
     protected $casts = [
         'total_leis' => 'integer',
     ];
 
+    /**
+     * Colunas permitidas para ordenação no Orchid.
+     */
     protected $allowedSorts = [
         'slug',
         'nome',
@@ -34,8 +45,32 @@ class Cidade extends Model
         'updated_at',
     ];
 
+    /* =====================================================
+     * ACCESSORS
+     * ===================================================== */
+
     /**
-     * Acessor para obter o total de leis com cache por cidade (TTL 6 horas).
+     * Retorna a URL pública do brasão da cidade.
+     * Refatorado para suportar URLs externas e caminhos internos.
+     */
+    public function getBrasaoUrlAttribute(): ?string
+    {
+        if (empty($this->brasao)) {
+            return null;
+        }
+
+        // Se já for uma URL (ex: guardada em array estático anteriormente), retorna direto
+        if (filter_var($this->brasao, FILTER_VALIDATE_URL)) {
+            return $this->brasao;
+        }
+
+        // Caso contrário, busca no disco público do storage
+        return Storage::disk('public')->url($this->brasao);
+    }
+
+    /**
+     * Retorna o total de leis/matérias com cache local (6 horas).
+     * Refatorado para evitar recursão infinita e melhorar tratamento de erros.
      */
     public function getTotalLeisAttribute(): int
     {
@@ -43,45 +78,43 @@ class Cidade extends Model
 
         return Cache::remember($cacheKey, now()->addHours(6), function () {
             try {
-                $sapl = new SaplService($this->sapl . '/api');
+                if (empty($this->sapl)) {
+                    return (int) ($this->attributes['total_leis'] ?? 0);
+                }
 
+                $sapl = new SaplService($this->sapl);
                 $response = $sapl->listarMaterias(1);
+                $total = (int) ($response['pagination']['total_entries'] ?? 0);
 
-                $total = $response['pagination']['total_entries'] ?? 0;
-
-                // Atualiza o campo no banco para consulta rápida (opcional)
+                // Evita que o Accessor dispare um save() comum que poderia causar loops
                 $this->updateQuietly(['total_leis' => $total]);
 
                 return $total;
             } catch (\Throwable $e) {
-                \Log::warning("Falha ao atualizar total_leis para cidade {$this->slug}: " . $e->getMessage());
+                logger()->warning("Falha ao obter total_leis da cidade {$this->slug}", [
+                    'error' => $e->getMessage(),
+                    'cidade_id' => $this->id
+                ]);
 
-                return $this->attributes['total_leis'] ?? 0;
+                // Retorna o valor que já estiver salvo no banco como backup
+                return (int) ($this->attributes['total_leis'] ?? 0);
             }
         });
     }
 
+    /* =====================================================
+     * BOOTSTAGING
+     * ===================================================== */
+
     /**
-     * Atualiza o total de leis imediatamente (útil em comandos ou após alterações).
+     * Gera o slug automaticamente ao salvar, se não existir.
      */
-    public function atualizarTotalLeis(): int
+    protected static function booted()
     {
-        try {
-            $sapl = new SaplService($this->sapl . '/api');
-
-            $response = $sapl->listarMaterias(1);
-
-            $total = $response['pagination']['total_entries'] ?? 0;
-
-            $this->update(['total_leis' => $total]);
-
-            Cache::forget("cidade:{$this->id}:total_leis");
-
-            return $total;
-        } catch (\Throwable $e) {
-            \Log::warning("Falha ao atualizar total_leis para cidade {$this->slug}: " . $e->getMessage());
-
-            return $this->total_leis ?? 0;
-        }
+        static::saving(function (Cidade $cidade) {
+            if (empty($cidade->slug)) {
+                $cidade->slug = Str::slug($cidade->nome . '-' . $cidade->uf);
+            }
+        });
     }
 }
