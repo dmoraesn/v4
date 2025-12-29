@@ -30,6 +30,15 @@ return [
 
     'disks' => [
 
+        /*
+        |--------------------------------------------------------------------------
+        | Local (privado)
+        |--------------------------------------------------------------------------
+        |
+        | Usado para arquivos internos da aplicação, não acessíveis via web.
+        |
+        */
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
@@ -38,14 +47,33 @@ return [
             'report' => false,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | Public (uploads públicos)
+        |--------------------------------------------------------------------------
+        |
+        | Usado para brasões, imagens públicas e assets servidos via /storage.
+        | Necessário rodar: php artisan storage:link
+        |
+        */
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
         ],
+
+        /*
+        |--------------------------------------------------------------------------
+        | Amazon S3
+        |--------------------------------------------------------------------------
+        |
+        | Pronto para uso futuro (CDN / escalabilidade).
+        |
+        */
 
         's3' => [
             'driver' => 's3',
@@ -67,9 +95,8 @@ return [
     | Symbolic Links
     |--------------------------------------------------------------------------
     |
-    | Here you may configure the symbolic links that will be created when the
-    | `storage:link` Artisan command is executed. The array keys should be
-    | the locations of the links and the values should be their targets.
+    | These links will be created when the `storage:link` command is executed.
+    | This allows serving public files from the /storage URL.
     |
     */
 
