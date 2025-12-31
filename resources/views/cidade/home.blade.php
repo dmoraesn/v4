@@ -5,379 +5,207 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $cidade['nome'] ?? 'Cidade' }} / {{ $cidade['uf'] ?? '' }} — BuscaLeis</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        :root {
-            --primary: #0055ff;
-            --primary-hover: #0044cc;
-            --bg: #f3f4f6;
-            --text-dark: #111827;
-            --text-light: #6b7280;
-            --border: #e5e7eb;
-            --card-bg: #ffffff;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            background: var(--bg);
-            color: var(--text-dark);
-            line-height: 1.5;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-
-        /* Top Bar / Breadcrumb */
-        .nav-back {
-            margin-bottom: 24px;
-        }
-        .nav-back a {
-            text-decoration: none;
-            color: var(--text-light);
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .nav-back a:hover { color: var(--primary); }
-
-        /* Cabeçalho da Cidade */
-        .city-header {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-            background: var(--card-bg);
-            padding: 32px;
-            border-radius: 20px;
-            box-shadow: var(--shadow-sm);
-            margin-bottom: 32px;
-        }
-
-        .city-header img {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        }
-
-        .city-title h1 {
-            font-size: 32px;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.02em;
-        }
-
-        .city-title p {
-            margin: 6px 0 0;
-            color: var(--text-light);
-            font-size: 15px;
-        }
-
-        /* Busca Destacada */
-        .search-container {
-            margin-bottom: 40px;
-        }
-
-        .search-form {
-            display: flex;
-            background: #fff;
-            padding: 8px;
-            border-radius: 16px;
-            border: 2px solid var(--border);
-            transition: all 0.2s;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .search-form:focus-within {
-            border-color: var(--primary);
-            box-shadow: var(--shadow-md);
-        }
-
-        .search-form input {
-            flex: 1;
-            border: none;
-            padding: 12px 16px;
-            font-size: 16px;
-            outline: none;
-            color: var(--text-dark);
-        }
-
-        .search-form button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .search-form button:hover { background: var(--primary-hover); }
-
-        /* Grid de Estatísticas */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 48px;
-        }
-
-        .stat-card {
-            background: var(--card-bg);
-            padding: 24px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            box-shadow: var(--shadow-sm);
-            transition: transform 0.2s;
-        }
-
-        .stat-card:hover { transform: translateY(-3px); }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-            background: #eff6ff;
-            color: var(--primary);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .stat-info strong {
-            display: block;
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .stat-info span {
-            font-size: 14px;
-            color: var(--text-light);
-            font-weight: 500;
-        }
-
-        /* Listas e Seções */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1.5fr 1fr;
-            gap: 32px;
-        }
-
-        @media (max-width: 850px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-        }
-
-        .section-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .section-title h2 {
-            font-size: 18px;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .section-title a {
-            font-size: 13px;
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .data-list {
-            background: var(--card-bg);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border);
-        }
-
-        .data-item {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background 0.2s;
-        }
-
-        .data-item:last-child { border-bottom: none; }
-        .data-item:hover { background: #f9fafb; }
-
-        .data-item a {
-            text-decoration: none;
-            color: var(--text-dark);
-            font-weight: 500;
-            font-size: 15px;
-            flex: 1;
-        }
-
-        .badge {
-            background: #f3f4f6;
-            color: var(--text-light);
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            border-radius: 6px;
-            text-transform: uppercase;
-        }
-
-        .author-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .author-avatar {
-            width: 32px;
-            height: 32px;
-            background: #e5e7eb;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            color: white;
-        }
-
-        footer {
-            margin-top: 64px;
-            padding-top: 32px;
-            border-top: 1px solid var(--border);
-            text-align: center;
-            font-size: 14px;
-            color: var(--text-light);
-        }
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        .stat-card:hover { transform: translateY(-4px); transition: all 0.3s ease; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-<div class="container">
-    
-    <nav class="nav-back">
-        <a href="{{ route('home') }}">← Voltar para a busca global</a>
+    {{-- Navbar --}}
+    <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="{{ route('home') }}" class="text-2xl font-black text-blue-600 tracking-tighter">
+                Busca<span class="text-slate-800">Leis</span>
+            </a>
+            <a href="{{ route('home') }}" class="group flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Voltar à busca global
+            </a>
+        </div>
     </nav>
 
-    {{-- Header --}}
-    <header class="city-header">
-        @if(!empty($cidade['brasao']))
-            <img src="{{ $cidade['brasao'] }}" alt="Brasão de {{ $cidade['nome'] }}">
-        @else
-            <div style="font-size: 40px;">🏛️</div>
-        @endif
-        <div class="city-title">
-            <h1>{{ $cidade['nome'] ?? 'Cidade' }} / {{ $cidade['uf'] ?? 'UF' }}</h1>
-            <p>Portal Legislativo de Inteligência e Transparência</p>
-        </div>
-    </header>
+    <main class="flex-grow max-w-7xl mx-auto w-full px-6 py-10">
 
-    {{-- Search --}}
-    <section class="search-container">
-        <form class="search-form" method="GET" action="{{ route('materias.index', $cidade['slug']) }}">
-            <input 
-                type="text" 
-                name="q" 
-                placeholder="O que você deseja encontrar em {{ $cidade['nome'] }}?" 
-                value="{{ request('q') }}"
-                autocomplete="off"
-            >
-            <button type="submit">Pesquisar</button>
-        </form>
-    </section>
+        {{-- Header da Cidade --}}
+        <header class="bg-white rounded-3xl border border-slate-200 p-8 md:p-12 mb-10 shadow-sm flex flex-col md:flex-row items-center gap-8">
+            <div class="relative">
+                <div class="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center p-4 border border-slate-100 shadow-inner">
+                    @php
+                        $urlBrasao = $cidade['brasao'];
+                        $urlFinal = null;
 
-    {{-- Stats Grid --}}
-    <section class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">📄</div>
-            <div class="stat-info">
-                <strong>{{ number_format($stats['total_materias'] ?? 0, 0, ',', '.') }}</strong>
-                <span>Matérias legislativas</span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">⚖️</div>
-            <div class="stat-info">
-                <strong>{{ number_format($stats['total_leis'] ?? 0, 0, ',', '.') }}</strong>
-                <span>Leis e normas</span>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">👤</div>
-            <div class="stat-info">
-                <strong>{{ number_format($stats['total_autores'] ?? 0, 0, ',', '.') }}</strong>
-                <span>Parlamentares</span>
-            </div>
-        </div>
-    </section>
+                        if ($urlBrasao) {
+                            // 1. Se já for uma URL completa (http...), usamos ela pura
+                            if (str_starts_with($urlBrasao, 'http')) {
+                                // Se a URL salva já estiver errada (com storage duplicado), limpamos aqui:
+                                $urlFinal = str_replace('/storage/storage/', '/storage/', $urlBrasao);
+                            } 
+                            // 2. Se for apenas um caminho, montamos a URL corretamente
+                            else {
+                                // Remove 'public/' ou 'storage/' do início para não duplicar
+                                $pathLimpo = str_replace(['public/', 'storage/'], '', $urlBrasao);
+                                $urlFinal = asset('storage/' . ltrim($pathLimpo, '/'));
+                            }
+                        }
+                    @endphp
 
-    {{-- Dashboard Content --}}
-    <div class="dashboard-grid">
-        
-        {{-- Coluna Principal: Leis --}}
-        <section>
-            <div class="section-title">
-                <h2>Leis mais acessadas</h2>
-                <a href="{{ route('materias.index', $cidade['slug']) }}">Ver todas</a>
+                    @if($urlFinal)
+                        <img src="{{ $urlFinal }}" alt="Brasão de {{ $cidade['nome'] }}" class="w-full h-full object-contain">
+                    @else
+                        <span class="text-5xl">🏛️</span>
+                    @endif
+                </div>
+                <div class="absolute -bottom-2 -right-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider shadow-lg">
+                    {{ $cidade['uf'] }}
+                </div>
             </div>
-            <div class="data-list">
-                @forelse($leisMaisAcessadas ?? [] as $lei)
-                    <div class="data-item">
-                        <a href="{{ route('materias.show', [$cidade['slug'], $lei['id']]) }}">
-                            {{ Str::limit($lei['titulo'], 80) }}
-                        </a>
-                        <span class="badge">{{ $lei['tipo'] }}</span>
-                    </div>
-                @empty
-                    <div class="data-item" style="color: var(--text-light);">Nenhuma lei disponível no momento.</div>
-                @endforelse
+
+            <div class="text-center md:text-left">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-2">
+                    {{ $cidade['nome'] }}
+                </h1>
+                <p class="text-lg text-slate-500 font-medium">
+                    Portal de Inteligência Legislativa e Transparência Pública
+                </p>
+                <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                        DADOS ATUALIZADOS
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                        SISTEMA SAPL ATIVO
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        {{-- Busca Interna --}}
+        <section class="mb-12">
+            <form action="{{ route('materias.index', $cidade['slug']) }}" method="GET" class="relative group">
+                <div class="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+                    <svg class="w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input type="text" name="q" value="{{ request('q') }}" 
+                    placeholder="O que você deseja encontrar em {{ $cidade['nome'] }}? (Ex: IPTU, Meio Ambiente, Nome de Rua...)" 
+                    class="w-full pl-14 pr-32 py-5 bg-white border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-lg shadow-sm">
+                <button type="submit" class="absolute right-3 top-2 bottom-2 bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl font-bold transition-all active:scale-95">
+                    Pesquisar
+                </button>
+            </form>
+        </section>
+
+        {{-- Grid de Estatísticas --}}
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            <div class="stat-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5">
+                <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl">📄</div>
+                <div>
+                    <span class="block text-2xl font-black text-slate-900 leading-none">{{ number_format($stats['total_materias'] ?? 0, 0, ',', '.') }}</span>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Matérias</span>
+                </div>
+            </div>
+            <div class="stat-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5">
+                <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl">⚖️</div>
+                <div>
+                    <span class="block text-2xl font-black text-slate-900 leading-none">{{ number_format($stats['total_leis'] ?? 0, 0, ',', '.') }}</span>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Leis e Normas</span>
+                </div>
+            </div>
+            <div class="stat-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5">
+                <div class="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl">👤</div>
+                <div>
+                    <span class="block text-2xl font-black text-slate-900 leading-none">{{ number_format($stats['total_autores'] ?? 0, 0, ',', '.') }}</span>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Parlamentares</span>
+                </div>
             </div>
         </section>
 
-        {{-- Coluna Lateral: Vereadores --}}
-        <section>
-            <div class="section-title">
-                <h2>Parlamentares ativos</h2>
-                <a href="{{ route('cidade.autores', $cidade['slug']) }}">Lista completa</a>
-            </div>
-            <div class="data-list">
-                @forelse($autoresMaisBuscados ?? [] as $autor)
-                    <div class="data-item">
-                        <div class="author-link">
-                            <div class="author-avatar" style="background-color: var(--primary);">
+        {{-- Listagem Principal --}}
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            
+            {{-- Leis (7 colunas) --}}
+            <section class="lg:col-span-8">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Leis mais acessadas</h2>
+                        <p class="text-sm text-slate-500">Documentos com maior relevância pública</p>
+                    </div>
+                    <a href="{{ route('materias.index', $cidade['slug']) }}" class="text-sm font-bold text-blue-600 hover:underline">Ver todas →</a>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    @forelse($leisMaisAcessadas ?? [] as $lei)
+                        <a href="{{ route('materias.show', [$cidade['slug'], $lei['id']]) }}" class="group flex items-center justify-between p-5 border-b border-slate-100 hover:bg-slate-50 transition-colors last:border-0">
+                            <div class="flex-grow pr-4">
+                                <h3 class="font-semibold text-slate-700 group-hover:text-blue-600 transition-colors line-clamp-2">{{ $lei['titulo'] }}</h3>
+                                <div class="flex gap-3 mt-2">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase">{{ $lei['tipo'] }}</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded uppercase">Acessado recentemente</span>
+                                </div>
+                            </div>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-300 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    @empty
+                        <div class="p-10 text-center text-slate-400">Nenhum dado disponível.</div>
+                    @endforelse
+                </div>
+            </section>
+
+            {{-- Parlamentares (4 colunas) --}}
+            <section class="lg:col-span-4">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Parlamentares</h2>
+                    <p class="text-sm text-slate-500">Atividade legislativa</p>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    @forelse($autoresMaisBuscados ?? [] as $autor)
+                        <div class="p-4 border-b border-slate-100 last:border-0 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
                                 {{ strtoupper(substr($autor['nome'], 0, 1)) }}
                             </div>
-                            <a href="{{ $autor['url'] }}">{{ $autor['nome'] }}</a>
+                            <div>
+                                <a href="{{ $autor['url'] }}" class="font-bold text-slate-700 hover:text-blue-600 block">{{ $autor['nome'] }}</a>
+                                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">{{ $autor['partido'] ?? 'Sem Partido' }}</span>
+                            </div>
                         </div>
-                    </div>
-                @empty
-                    <div class="data-item">Nenhum autor encontrado.</div>
-                @endforelse
+                    @empty
+                        <div class="p-10 text-center text-slate-400 italic">Sem registros.</div>
+                    @endforelse
+                    <a href="{{ route('cidade.autores', $cidade['slug']) }}" class="block p-4 bg-slate-50 text-center text-sm font-bold text-slate-600 hover:text-blue-600 border-t border-slate-100">
+                        Ver lista completa de vereadores
+                    </a>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-10">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-sm text-slate-500 font-medium">
+                © {{ date('Y') }} BuscaLeis — Transformando dados públicos em inteligência legislativa municipal.
+            </p>
+            <div class="mt-4 flex justify-center gap-6">
+                <a href="#" class="text-xs font-bold text-slate-400 hover:text-slate-600 uppercase">Termos de Uso</a>
+                <a href="#" class="text-xs font-bold text-slate-400 hover:text-slate-600 uppercase">Privacidade</a>
+                <a href="#" class="text-xs font-bold text-slate-400 hover:text-slate-600 uppercase">Sobre o SAPL</a>
             </div>
-        </section>
-
-    </div>
-
-    <footer>
-        <p>© {{ date('Y') }} BuscaLeis — Transformando dados públicos em inteligência legislativa.</p>
+        </div>
     </footer>
-
-</div>
 
 </body>
 </html>

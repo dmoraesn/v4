@@ -7,24 +7,33 @@ use App\Repositories\CidadeRepository;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Orchid\Screen\Actions\Button;
+use Orchid\Screen\Actions\Link;
 use Orchid\Screen\Fields\Input;
 use Orchid\Screen\Fields\Picture;
 use Orchid\Screen\Screen;
 use Orchid\Support\Facades\Layout;
 use Orchid\Support\Facades\Toast;
 use Illuminate\Support\Facades\Storage;
+use Orchid\Screen\Sight;
 
 class CidadeEditScreen extends Screen
 {
     /**
      * @var bool
      */
-    protected $exists = false;
+    public $exists = false;
 
-    public function __construct(
-        protected CidadeRepository $cidadeRepository
-    ) {}
+    /**
+     * @param CidadeRepository $cidadeRepository
+     */
+    public function __construct(protected CidadeRepository $cidadeRepository)
+    {
+    }
 
+    /**
+     * @param Cidade $cidade
+     * @return array
+     */
     public function query(Cidade $cidade): array
     {
         $this->exists = $cidade->exists;
@@ -34,14 +43,24 @@ class CidadeEditScreen extends Screen
         ];
     }
 
+    /**
+     * @return string|null
+     */
     public function name(): ?string
     {
         return $this->exists ? 'Editar Cidade' : 'Criar Nova Cidade';
     }
 
+    /**
+     * @return \Orchid\Screen\Action[]
+     */
     public function commandBar(): array
     {
         return [
+            Link::make('Voltar')
+                ->icon('bs.arrow-left')
+                ->route('platform.cidade.list'),
+
             Button::make('Salvar Cidade')
                 ->icon('bs.check-circle')
                 ->method('save'),
@@ -54,78 +73,93 @@ class CidadeEditScreen extends Screen
         ];
     }
 
+    /**
+     * @return \Orchid\Screen\Layout[]
+     */
     public function layout(): array
     {
         return [
+            // 1. Injetamos um CSS para esconder o preview gigante que o Orchid cria automaticamente
+            Layout::view('orchid.partials.custom-css'),
+
+            // 2. Nossa Miniatura Controlada (Legend)
+            Layout::legend('cidade', [
+                Sight::make('brasao', 'Miniatura Atual')
+                    ->render(function (Cidade $cidade) {
+                        if (empty($cidade->brasao)) {
+                            return "<div class='p-3 border rounded bg-light text-center' style='width: 100px;'>
+                                        <span class='text-muted fw-bold'>SEM IMAGEM</span>
+                                    </div>";
+                        }
+
+                        // Lógica de URL robusta
+                        $path = str_replace(['\\', 'storage/app/public/', 'storage\app\public\\'], ['/', '', ''], $cidade->brasao);
+                        $url = asset('storage/' . ltrim($path, '/'));
+
+                        return "<img src='{$url}' 
+                                     alt='Preview' 
+                                     class='img-fluid rounded border shadow-sm p-1' 
+                                     style='max-height: 120px; background: #fff;'
+                                     onerror=\"this.src='https://ui-avatars.com/api/?name=".urlencode($cidade->nome)."&background=f3f4f6&color=6b7280'\">";
+                    }),
+            ])->title('Visualização do Brasão')
+              ->canSee($this->exists),
+
+            // 3. Campos de Edição
             Layout::rows([
                 Input::make('cidade.nome')
                     ->title('Nome Oficial')
-                    ->placeholder('Ex: Fortaleza')
                     ->required(),
 
                 Input::make('cidade.slug')
                     ->title('Slug')
-                    ->placeholder('ex-nome-da-cidade')
-                    ->help('Identificador único para a URL pública.')
                     ->required(),
 
                 Input::make('cidade.uf')
                     ->title('UF')
-                    ->placeholder('CE')
-                    ->maxlength(2)
-                    ->required(),
+                    ->required()
+                    ->maxlength(2),
 
                 Input::make('cidade.sapl')
                     ->title('URL Base SAPL')
-                    ->placeholder('https://sapl.exemplo.ce.leg.br')
                     ->required(),
 
                 Picture::make('cidade.brasao')
-                    ->title('Brasão da Cidade')
+                    ->title('Upload do Brasão')
                     ->storage('public')
-                    ->targetRelativeUrl() // Salva o caminho como: 2025/12/29/imagem.png
+                    ->targetRelativeUrl()
                     ->acceptedFiles('image/png,image/jpeg,image/webp')
-                    ->help('Recomendado: PNG com fundo transparente.'),
+                    ->help('O preview gigante abaixo foi ocultado para melhorar a navegação.'),
             ]),
         ];
     }
 
-    /**
-     * Salva ou atualiza a cidade
-     */
     public function save(Cidade $cidade, Request $request)
     {
-        $data = $request->validate([
-            'cidade.slug' => [
-                'required',
-                Rule::unique('cidades', 'slug')->ignore($cidade->id),
-            ],
+        $validated = $request->validate([
+            'cidade.slug'   => ['required', Rule::unique('cidades', 'slug')->ignore($cidade->id)],
             'cidade.nome'   => 'required|string|max:255',
             'cidade.uf'     => 'required|string|size:2',
             'cidade.sapl'   => 'required|url',
             'cidade.brasao' => 'nullable|string',
-        ])['cidade'];
+        ]);
 
-        // Lógica de limpeza de arquivos antigos
+        $data = $validated['cidade'];
+
         if ($cidade->exists && $cidade->isDirty('brasao')) {
-            $oldBrasao = $cidade->getOriginal('brasao');
-            if ($oldBrasao) {
-                Storage::disk('public')->delete($oldBrasao);
+            $old = $cidade->getOriginal('brasao');
+            if ($old) {
+                Storage::disk('public')->delete($old);
             }
         }
 
         $cidade->fill($data)->save();
-
         $this->cidadeRepository->clearHomeCache();
 
         Toast::success('Cidade salva com sucesso.');
-
         return redirect()->route('platform.cidade.list');
     }
 
-    /**
-     * Remove a cidade e o arquivo físico do brasão
-     */
     public function remove(Cidade $cidade)
     {
         if ($cidade->brasao) {
@@ -133,11 +167,9 @@ class CidadeEditScreen extends Screen
         }
 
         $cidade->delete();
-
         $this->cidadeRepository->clearHomeCache();
 
-        Toast::info('Cidade removida com sucesso.');
-
+        Toast::info('Cidade removida.');
         return redirect()->route('platform.cidade.list');
     }
 }

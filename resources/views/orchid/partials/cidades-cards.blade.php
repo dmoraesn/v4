@@ -5,7 +5,18 @@
                 <div class="card h-100 shadow-sm border-0 rounded-4 text-center p-4 hover-lift">
                     <div class="card-body d-flex flex-column align-items-center">
 
-                        @include('orchid.partials.brasao-partial', ['cidade' => $cidade])
+                        <div class="mb-3 d-flex align-items-center justify-content-center" style="height: 100px; width: 100px;">
+                            @if($cidade->brasao_url)
+                                <img src="{{ $cidade->brasao_url }}" 
+                                     alt="Brasão de {{ $cidade->nome }}" 
+                                     class="img-fluid" 
+                                     style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                            @else
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="height: 80px; width: 80px;">
+                                    <i class="bs.image text-muted" style="font-size: 2rem;"></i>
+                                </div>
+                            @endif
+                        </div>
 
                         <h3 class="h5 fw-bold text-dark mt-3 mb-1">
                             {{ $cidade->nome }}

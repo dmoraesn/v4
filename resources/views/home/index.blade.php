@@ -84,14 +84,29 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @forelse($cidades ?? [] as $slug => $cidade)
+                    @php
+                        // Lógica unificada para o brasão da cidade
+                        $urlBrasao = $cidade['brasao'] ?? null;
+                        $urlFinal = null;
+
+                        if ($urlBrasao) {
+                            if (str_starts_with($urlBrasao, 'http')) {
+                                $urlFinal = str_replace('/storage/storage/', '/storage/', $urlBrasao);
+                            } else {
+                                $pathLimpo = str_replace(['public/', 'storage/'], '', $urlBrasao);
+                                $urlFinal = asset('storage/' . ltrim($pathLimpo, '/'));
+                            }
+                        }
+                    @endphp
+
                     <a href="{{ route('cidade.home', $slug) }}" class="group relative bg-white border border-slate-200 p-5 rounded-2xl hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 overflow-hidden">
                         
                         <div class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-full -mr-10 -mt-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                         <div class="relative flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-blue-50 transition-colors shrink-0 overflow-hidden shadow-inner">
-                                @if(isset($cidade['bandeira_url']))
-                                    <img src="{{ $cidade['bandeira_url'] }}" alt="{{ $cidade['nome'] }}" class="w-full h-full object-cover shadow-sm">
+                            <div class="w-14 h-14 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-blue-50 transition-colors shrink-0 overflow-hidden shadow-inner p-2">
+                                @if($urlFinal)
+                                    <img src="{{ $urlFinal }}" alt="Brasão de {{ $cidade['nome'] }}" class="w-full h-full object-contain">
                                 @else
                                     <span class="text-sm font-bold text-slate-400 group-hover:text-blue-600 uppercase">
                                         {{ substr($cidade['nome'], 0, 2) }}
@@ -109,9 +124,9 @@
                                 </div>
                             </div>
 
-                            <div class="text-right">
+                            <div class="text-right border-l border-slate-100 pl-4">
                                 <span class="block text-sm font-bold text-slate-900">{{ number_format($cidade['total_docs'] ?? 0, 0, ',', '.') }}</span>
-                                <span class="block text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">Documentos</span>
+                                <span class="block text-[10px] uppercase font-extrabold text-slate-400 tracking-wider">Docs</span>
                             </div>
                         </div>
                     </a>
