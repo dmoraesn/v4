@@ -1,49 +1,39 @@
 <?php
 
 return [
-
     /*
-     |--------------------------------------------------------------------------
-     | Sub-Domain Routing
-     |--------------------------------------------------------------------------
-     |
-     | This value represents the "domain name" associated with your application. This
-     | can be utilized to prevent dashboard internal routes from being registered
-     | on subdomains that do not require access to your admin application.
-     |
-     | For instance, you can use the 'admin' on a separate subdomain like
-     | 'admin.example.com'.
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Sub-Domain Routing
+    |--------------------------------------------------------------------------
+    |
+    | Define o domínio associado à aplicação administrativa. Utilizado para
+    | restringir o registro de rotas internas do dashboard em subdomínios que
+    | não necessitem de acesso ao painel (ex: 'admin.example.com').
+    |
+    */
     'domain' => env('PLATFORM_DOMAIN'),
 
     /*
-     |--------------------------------------------------------------------------
-     | Route Prefixes
-     |--------------------------------------------------------------------------
-     |
-     | This prefix method can be used to specify the prefix of every route in
-     | the administrator dashboard. This way, you can easily change the path
-     | to a URL you find more appropriate. For instance: '/', '/admin', or '/panel'.
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Route Prefixes
+    |--------------------------------------------------------------------------
+    |
+    | Prefixo aplicado a todas as rotas do painel administrativo.
+    | Exemplos comuns: '/', '/admin' ou '/panel'.
+    |
+    */
     'prefix' => env('PLATFORM_PREFIX', '/admin'),
 
     /*
-     |--------------------------------------------------------------------------
-     | Middleware
-     |--------------------------------------------------------------------------
-     |
-     | This middleware will be assigned to every route in the administration
-     | dashboard. You can add your custom middleware to this stack.
-     |
-     | For more information on middleware, please refer to:
-     | https://laravel.com/docs/middleware
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Middleware
+    |--------------------------------------------------------------------------
+    |
+    | Middlewares aplicados a todas as rotas do dashboard Orchid.
+    | 'public'  – Rotas acessíveis sem autenticação.
+    | 'private' – Rotas protegidas (requer autenticação via 'platform').
+    |
+    */
     'middleware' => [
         'public'  => ['web', 'cache.headers:private;must_revalidate;etag'],
         'private' => ['web', 'platform', 'cache.headers:private;must_revalidate;etag'],
@@ -54,211 +44,147 @@ return [
     | Guard
     |--------------------------------------------------------------------------
     |
-    | This option specifies the name of the guard that should be used for
-    | authentication when accessing the administration dashboard. If you are
-    | using a multi-auth setup, you can use this option to specify the
-    | guard that should be used for administrative routes. If you are
-    | not using the default guard, remember to add 'auth:guard_name'
-    | to the middleware list, where 'guard_name' is the name of the
-    | guard you want to use.
-    |
-    | You can learn more about Laravel authentication here:
-    | https://laravel.com/docs/authentication
+    | Nome do guard de autenticação utilizado nas rotas administrativas.
+    | Permite integração com setups multi-auth do Laravel.
     |
     */
-
     'guard' => env('AUTH_GUARD', 'web'),
 
     /*
-     |--------------------------------------------------------------------------
-     | Authentication Page
-     |--------------------------------------------------------------------------
-     |
-     | This option controls the visibility of Orchid's built-in authentication pages.
-     | If you wish to use your own authentication pages (e.g., with Laravel Jetstream),
-     | you can disable Orchid's built-in authentication by setting this option to false.
-     |
-     | If your application consists entirely of an administration dashboard, and you need
-     | the following functions: forgot password, two-factor authentication, registration,
-     | please consider using https://github.com/orchidsoftware/fortify.
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Authentication Page
+    |--------------------------------------------------------------------------
+    |
+    | Controla a exibição das páginas de autenticação nativas do Orchid
+    | (login, recuperação de senha, etc.). Defina como false caso utilize
+    | soluções externas (ex: Laravel Jetstream ou Fortify).
+    |
+    */
     'auth' => true,
 
     /*
-     |--------------------------------------------------------------------------
-     | Main Route
-     |--------------------------------------------------------------------------
-     |
-     | This route is the starting page of the dashboard application. Users will be
-     | redirected to this page when they enter the dashboard or click on the
-     | dashboard's logo or links.
-     |
-     | Example: 'platform.main'
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Main Route
+    |--------------------------------------------------------------------------
+    |
+    | Rota principal do dashboard. Usuários são redirecionados para esta
+    | página ao acessar o painel ou clicar no logo.
+    |
+    */
     'index' => 'platform.main',
 
     /*
-     |--------------------------------------------------------------------------
-     | User Profile Route
-     |--------------------------------------------------------------------------
-     |
-     | This route is used to access the user profile page. It will be opened by
-     | users when they want to view or edit their profile information.
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | User Profile Route
+    |--------------------------------------------------------------------------
+    |
+    | Rota para acesso ao perfil do usuário autenticado.
+    |
+    */
     'profile' => 'platform.profile',
 
     /*
-     |--------------------------------------------------------------------------
-     | Dashboard Resource
-     |--------------------------------------------------------------------------
-     |
-     | This option is used to store links for stylesheets and scripts automatically
-     | connected to your dashboard. These can be local files or external URLs.
-     |
-     | Example: '/css/styles.css', 'https://example.com/scripts.js'
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Dashboard Resource
+    |--------------------------------------------------------------------------
+    |
+    | Links para estilos e scripts carregados automaticamente no dashboard.
+    | Aceita caminhos locais ou URLs externas.
+    |
+    */
     'resource' => [
         'stylesheets' => [],
         'scripts'     => [],
     ],
 
     /*
-     |--------------------------------------------------------------------------
-     | Vite Resource
-     |--------------------------------------------------------------------------
-     |
-     | Within the 'vite' associative array, specify input files to be parsed by
-     | Vite by providing specific paths to JS and CSS assets. Here is an example:
-     |
-     | Example: ['resources/css/app.css', 'resources/js/app.js']
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Vite Resource
+    |--------------------------------------------------------------------------
+    |
+    | Arquivos de entrada para processamento pelo Vite (JS/CSS).
+    | Exemplo: ['resources/css/app.css', 'resources/js/app.js']
+    |
+    */
     'vite' => [],
 
     /*
-     |--------------------------------------------------------------------------
-     | Template View
-     |--------------------------------------------------------------------------
-     |
-     | This configuration option is utilized to determine which templates will be displayed
-     | in the application and used on pages. It permits you to customize the part of
-     | the user interface that is suitable for specifying the name, logo, accompanying
-     | documents, and so on.
-     |
-     | Example: If your file exists at '/views/brand/header.blade.php', the value for
-     | the 'header' key should be 'brand.header'.
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Template View
+    |--------------------------------------------------------------------------
+    |
+    | Templates personalizados para header e footer do dashboard.
+    | Use notação Blade (ex: 'brand.header' para resources/views/brand/header.blade.php).
+    |
+    */
     'template' => [
         'header' => '',
         'footer' => '',
     ],
 
     /*
-     |--------------------------------------------------------------------------
-     | Default Attachment Configuration
-     |--------------------------------------------------------------------------
-     |
-     | This option allows you to specify the default settings for file attachments
-     | in your application. You can customize the disk and file generator used
-     | for attachments.
-     |
-     | The 'disk' option specifies the default filesystem disk where attachments
-     | will be stored. The default value is 'public', but you can also specify
-     | a different disk such as 's3' if you have configured one.
-     |
-     | The 'generator' option specifies the default file generator class that
-     | will be used to generate unique filenames for attachments. The default
-     | value is \Orchid\Attachment\Engines\Generator::class, but you can
-     | specify a different class if you have created your own custom generator.
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Default Attachment Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configurações padrão para anexos de arquivos.
+    | 'disk'      – Disco de armazenamento (padrão: 'public').
+    | 'generator' – Classe responsável pela geração de nomes únicos.
+    |
+    */
     'attachment' => [
         'disk'      => env('PLATFORM_FILESYSTEM_DISK', 'public'),
         'generator' => \Orchid\Attachment\Engines\Generator::class,
     ],
 
     /*
-     |--------------------------------------------------------------------------
-     | Icons Path
-     |--------------------------------------------------------------------------
-     |
-     | Provide the path from your app to your SVG icons directory. This configuration
-     | permits you to specify the location of your SVG icons, which can be used in
-     | various parts of the application.
-     |
-     | Example: ['fa' => storage_path('app/fontawesome')]
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Icons Path
+    |--------------------------------------------------------------------------
+    |
+    | Caminhos para diretórios de ícones SVG utilizados no dashboard.
+    |
+    */
     'icons' => [
-        'bs'  => \Orchid\Support\BootstrapIconsPath::getFolder(),
+        'bs' => \Orchid\Support\BootstrapIconsPath::getFolder(),
     ],
 
     /*
-     |--------------------------------------------------------------------------
-     | Notifications
-     |--------------------------------------------------------------------------
-     |
-     | Notifications are an excellent way to inform your users about what is
-     | happening in your application. These notifications can be viewed by
-     | clicking on the notification bell icon in the application's navigation bar.
-     | The notification bell will have an unread count indicator when there are
-     | unread announcements or notifications.
-     |
-     | By default, the interval for updating notifications is set to one minute.
-     */
-
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    |
+    | Configuração do sistema de notificações do Orchid.
+    | 'enabled'  – Ativa/desativa o ícone de sino e polling AJAX.
+    | 'interval' – Intervalo de atualização em segundos (padrão: 60).
+    |
+    */
     'notifications' => [
-        'enabled'  => true,
+        'enabled'  => false, // Desativado para evitar lentidão no endpoint /admin/api/notifications
         'interval' => 60,
     ],
 
     /*
-     |--------------------------------------------------------------------------
-     | Search
-     |--------------------------------------------------------------------------
-     |
-     | This configuration option determines which models will be searchable in the
-     | sidebar search feature. To be searchable, a model must have a Presenter and
-     | a Scout class defined for it.
-     |
-     | Example:
-     |
-     | 'search' => [
-     |     \App\Models\User::class,
-     |     \App\Models\Post::class,
-     | ],
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Search
+    |--------------------------------------------------------------------------
+    |
+    | Modelos habilitados para busca global na sidebar.
+    | Requer implementação de Presenter e Scout no modelo.
+    |
+    */
     'search' => [
-        // \App\Models\User::class
+        // \App\Models\User::class,
     ],
 
     /*
-     |--------------------------------------------------------------------------
-     | Hotwire Turbo
-     |--------------------------------------------------------------------------
-     |
-     | Turbo Drive maintains a cache of recently visited pages.
-     | This cache serves two purposes: to display pages without accessing
-     | the network during restoration visits, and to improve perceived
-     | performance by showing temporary previews during application visits.
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Hotwire Turbo
+    |--------------------------------------------------------------------------
+    |
+    | Configurações do Turbo Drive (cache de páginas visitadas e prefetch).
+    |
+    */
     'turbo' => [
         'cache'          => true,
         'prefetch'       => true,
@@ -267,17 +193,14 @@ return [
     ],
 
     /*
-     |--------------------------------------------------------------------------
-     | Fallback Page
-     |--------------------------------------------------------------------------
-     |
-     | If the request does not match any route and arguments,
-     | Orchid will automatically generate its own 404 page.
-     | It can be disabled if you want to declare routes on the same
-     | domain and prefix or create your own page.
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Fallback Page
+    |--------------------------------------------------------------------------
+    |
+    | Habilita a página 404 personalizada do Orchid para rotas não encontradas
+    | no domínio/prefixo configurado.
+    |
+    */
     'fallback' => true,
 
     /*
@@ -285,14 +208,10 @@ return [
     | Workspace
     |--------------------------------------------------------------------------
     |
-    | The workspace option sets the template that wraps the content of the screens.
-    | It determines whether the entire user screen will be used or whether
-    | the content will be compressed to a fixed width.
-    |
-    | Options: 'platform::workspace.compact', 'platform::workspace.full'
+    | Template de layout para telas do dashboard.
+    | 'compact' – Largura fixa; 'full' – Largura total.
     |
     */
-
     'workspace' => 'platform::workspace.compact',
 
     /*
@@ -300,25 +219,18 @@ return [
     | Prevents Abandonment
     |--------------------------------------------------------------------------
     |
-    | This option determines whether the Prevents Abandonment feature is enabled
-    | or disabled for the application.
+    | Ativa recurso de prevenção de abandono de formulários não salvos.
     |
     */
-
     'prevents_abandonment' => true,
 
     /*
-     |--------------------------------------------------------------------------
-     | Service Provider
-     |--------------------------------------------------------------------------
-     |
-     | This value is a class namespace of the platform's service provider. You
-     | can override it to define a custom namespace. This may be useful if you
-     | want to place Orchid's service provider in a location different from
-     | "app/Orchid".
-     |
-     */
-
+    |--------------------------------------------------------------------------
+    | Service Provider
+    |--------------------------------------------------------------------------
+    |
+    | Namespace do service provider personalizado do Orchid.
+    |
+    */
     'provider' => \App\Orchid\PlatformProvider::class,
-
 ];

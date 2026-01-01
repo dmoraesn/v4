@@ -5,70 +5,116 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Cidade;
 use App\Services\SaplService;
+use App\Services\Sapl\SaplAutoresService;
 
 class CidadeController extends Controller
 {
     /**
-     * Dashboard da Cidade.
+     * Exibe o dashboard da cidade específica.
      *
-     * Exibe estatísticas básicas e entrada para busca legislativa.
+     * Carrega dados reais do SAPL com cache otimizado para evitar timeouts:
+     * - Estatísticas gerais.
+     * - Leis estruturais mais relevantes.
+     * - Total e top 5 parlamentares ativos da legislatura atual.
      *
-     * @param string $cidade Slug da cidade (ex: fortaleza)
+     * @param string $cidade Slug da cidade
      */
     public function show(string $cidade)
     {
         /** @var Cidade $cidadeModel */
         $cidadeModel = Cidade::where('slug', $cidade)->firstOrFail();
 
-        /**
-         * Estatísticas da cidade (cache 6 horas).
-         * Nesta fase, mantemos mock parcial + dados reais onde já existem.
-         */
+        $cidadeArray = [
+            'id'     => $cidadeModel->id,
+            'slug'   => $cidadeModel->slug,
+            'nome'   => $cidadeModel->nome,
+            'uf'     => $cidadeModel->uf,
+            'sapl'   => $cidadeModel->sapl,
+            'brasao' => $cidadeModel->brasao_url,
+        ];
+
+        $saplService    = new SaplService($cidadeModel->sapl);
+        $autoresService = new SaplAutoresService($cidadeModel->sapl);
+
         $stats = Cache::remember(
             "cidade:{$cidadeModel->id}:stats",
             now()->addHours(6),
-            function () use ($cidadeModel) {
-                try {
-                    // Base já real
-                    $totalLeis = $cidadeModel->total_leis;
+            function () use ($saplService, $autoresService) {
+                $responseMaterias = $saplService->listarMaterias(1);
+                $totalMaterias    = $responseMaterias['pagination']['total_entries'] ?? 0;
 
-                    // Etapas futuras:
-                    // - total_autores via AutorResolver
-                    // - total_normas específicas
-                    return [
-                        'total_materias' => $totalLeis,
-                        'total_leis'     => $totalLeis,
-                        'total_autores'  => 0, // placeholder consciente
-                    ];
-                } catch (\Throwable $e) {
-                    logger()->warning(
-                        "Falha ao montar stats da cidade {$cidadeModel->slug}",
-                        ['error' => $e->getMessage()]
-                    );
+                $totalAutores = $autoresService->totalAutoresAtivos();
 
-                    return [
-                        'total_materias' => 0,
-                        'total_leis'     => 0,
-                        'total_autores'  => 0,
-                    ];
-                }
+                return [
+                    'total_materias' => $totalMaterias,
+                    'total_leis'     => $totalMaterias, // Aproximação conservadora
+                    'total_autores'  => $totalAutores,
+                ];
             }
         );
 
-        /**
-         * Enviamos o model diretamente para a view.
-         * O accessor `brasao_url` já resolve tudo.
-         */
+        $leisMaisAcessadas = Cache::remember(
+            "cidade:{$cidadeModel->id}:leis_relevantes",
+            now()->addHours(12),
+            function () use ($saplService) {
+                $termos = [
+                    'Lei Orgânica',
+                    'Plano Diretor',
+                    'Código Tributário',
+                    'Código de Obras',
+                    'Zoneamento',
+                    'Lei de Uso e Ocupação do Solo',
+                    'Regimento Interno',
+                    'LDO',
+                    'LOA',
+                    'PPA',
+                ];
+
+                $leisEncontradas = [];
+
+                foreach ($termos as $termo) {
+                    $response = $saplService->buscaSemanticaLocal($termo, 1, 5);
+                    foreach ($response['results'] ?? [] as $materia) {
+                        $tipo = $materia['tipo']['descricao'] ?? $materia['tipo']['sigla'] ?? 'Desconhecido';
+
+                        $leisEncontradas[] = [
+                            'id'     => $materia['id'],
+                            'titulo' => $materia['ementa'] ?: "Matéria {$materia['numero']}/{$materia['ano']}",
+                            'tipo'   => $tipo,
+                        ];
+                    }
+                }
+
+                $leisUnicas = collect($leisEncontradas)->unique('id')->take(10)->values()->all();
+
+                if (empty($leisUnicas)) {
+                    return [
+                        ['id' => null, 'titulo' => 'Lei Orgânica do Município', 'tipo' => 'Lei Orgânica'],
+                        ['id' => null, 'titulo' => 'Plano Diretor Participativo', 'tipo' => 'Lei Complementar'],
+                        ['id' => null, 'titulo' => 'Código Tributário Municipal', 'tipo' => 'Lei Complementar'],
+                    ];
+                }
+
+                return $leisUnicas;
+            }
+        );
+
+        $totalAutoresAtivos = $autoresService->totalAutoresAtivos();
+
+        $topAutoresAtivos = Cache::remember(
+            "cidade:{$cidadeModel->id}:autores_top5",
+            now()->addHours(6),
+            function () use ($autoresService) {
+                return $autoresService->listarAutoresAtivosComQuantidadeMaterias(5);
+            }
+        );
+
         return view('cidade.home', [
-            'cidade' => [
-                'id'     => $cidadeModel->id,
-                'slug'   => $cidadeModel->slug,
-                'nome'   => $cidadeModel->nome,
-                'uf'     => $cidadeModel->uf,
-                'sapl'   => $cidadeModel->sapl,
-                'brasao' => $cidadeModel->brasao_url,
-            ],
-            'stats' => $stats,
+            'cidade'              => $cidadeArray,
+            'stats'               => $stats,
+            'totalAutoresAtivos'  => $totalAutoresAtivos,
+            'leisMaisAcessadas'    => $leisMaisAcessadas,
+            'topAutoresAtivos'    => $topAutoresAtivos,
         ]);
     }
 }

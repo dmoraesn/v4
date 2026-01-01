@@ -1,14 +1,16 @@
+{{-- resources/views/cidade/home.blade.php --}}
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $cidade['nome'] ?? 'Cidade' }} / {{ $cidade['uf'] ?? '' }} — BuscaLeis</title>
+    <title>{{ $cidade['nome'] }} / {{ $cidade['uf'] }} — BuscaLeis</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
@@ -40,31 +42,13 @@
         <header class="bg-white rounded-3xl border border-slate-200 p-8 md:p-12 mb-10 shadow-sm flex flex-col md:flex-row items-center gap-8">
             <div class="relative">
                 <div class="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center p-4 border border-slate-100 shadow-inner">
-                    @php
-                        $urlBrasao = $cidade['brasao'];
-                        $urlFinal = null;
-
-                        if ($urlBrasao) {
-                            // 1. Se já for uma URL completa (http...), usamos ela pura
-                            if (str_starts_with($urlBrasao, 'http')) {
-                                // Se a URL salva já estiver errada (com storage duplicado), limpamos aqui:
-                                $urlFinal = str_replace('/storage/storage/', '/storage/', $urlBrasao);
-                            } 
-                            // 2. Se for apenas um caminho, montamos a URL corretamente
-                            else {
-                                // Remove 'public/' ou 'storage/' do início para não duplicar
-                                $pathLimpo = str_replace(['public/', 'storage/'], '', $urlBrasao);
-                                $urlFinal = asset('storage/' . ltrim($pathLimpo, '/'));
-                            }
-                        }
-                    @endphp
-
-                    @if($urlFinal)
-                        <img src="{{ $urlFinal }}" alt="Brasão de {{ $cidade['nome'] }}" class="w-full h-full object-contain">
+                    @if($cidade['brasao'] ?? false)
+                        <img src="{{ $cidade['brasao'] }}" alt="Brasão de {{ $cidade['nome'] }}" class="w-full h-full object-contain">
                     @else
                         <span class="text-5xl">🏛️</span>
                     @endif
                 </div>
+
                 <div class="absolute -bottom-2 -right-2 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider shadow-lg">
                     {{ $cidade['uf'] }}
                 </div>
@@ -97,9 +81,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
-                <input type="text" name="q" value="{{ request('q') }}" 
-                    placeholder="O que você deseja encontrar em {{ $cidade['nome'] }}? (Ex: IPTU, Meio Ambiente, Nome de Rua...)" 
-                    class="w-full pl-14 pr-32 py-5 bg-white border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-lg shadow-sm">
+                <input type="text"
+                       name="q"
+                       value="{{ request('q') }}"
+                       placeholder="O que você deseja encontrar em {{ $cidade['nome'] }}? (Ex: IPTU, Meio Ambiente, Nome de Rua...)"
+                       class="w-full pl-14 pr-32 py-5 bg-white border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all text-lg shadow-sm"
+                       autofocus>
                 <button type="submit" class="absolute right-3 top-2 bottom-2 bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl font-bold transition-all active:scale-95">
                     Pesquisar
                 </button>
@@ -111,80 +98,127 @@
             <div class="stat-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5">
                 <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl">📄</div>
                 <div>
-                    <span class="block text-2xl font-black text-slate-900 leading-none">{{ number_format($stats['total_materias'] ?? 0, 0, ',', '.') }}</span>
+                    <span class="block text-2xl font-black text-slate-900 leading-none">
+                        {{ number_format($stats['total_materias'] ?? 0, 0, ',', '.') }}
+                    </span>
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Matérias</span>
                 </div>
             </div>
+
             <div class="stat-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5">
                 <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl">⚖️</div>
                 <div>
-                    <span class="block text-2xl font-black text-slate-900 leading-none">{{ number_format($stats['total_leis'] ?? 0, 0, ',', '.') }}</span>
+                    <span class="block text-2xl font-black text-slate-900 leading-none">
+                        {{ number_format($stats['total_leis'] ?? 0, 0, ',', '.') }}
+                    </span>
                     <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Leis e Normas</span>
                 </div>
             </div>
+
             <div class="stat-card bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5">
                 <div class="w-14 h-14 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl">👤</div>
                 <div>
-                    <span class="block text-2xl font-black text-slate-900 leading-none">{{ number_format($stats['total_autores'] ?? 0, 0, ',', '.') }}</span>
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Parlamentares</span>
+                    <span class="block text-2xl font-black text-slate-900 leading-none">
+                        {{ number_format($totalAutoresAtivos ?? 0, 0, ',', '.') }}
+                    </span>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Parlamentares Ativos</span>
                 </div>
             </div>
         </section>
 
         {{-- Listagem Principal --}}
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            
-            {{-- Leis (7 colunas) --}}
+
+            {{-- Leis mais acessadas (8 colunas) --}}
             <section class="lg:col-span-8">
                 <div class="flex justify-between items-end mb-6">
                     <div>
                         <h2 class="text-2xl font-bold text-slate-800">Leis mais acessadas</h2>
                         <p class="text-sm text-slate-500">Documentos com maior relevância pública</p>
                     </div>
-                    <a href="{{ route('materias.index', $cidade['slug']) }}" class="text-sm font-bold text-blue-600 hover:underline">Ver todas →</a>
+                    <a href="{{ route('materias.index', $cidade['slug']) }}" class="text-sm font-bold text-blue-600 hover:underline">
+                        Ver todas →
+                    </a>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                    @forelse($leisMaisAcessadas ?? [] as $lei)
-                        <a href="{{ route('materias.show', [$cidade['slug'], $lei['id']]) }}" class="group flex items-center justify-between p-5 border-b border-slate-100 hover:bg-slate-50 transition-colors last:border-0">
+                    @forelse($leisMaisAcessadas as $lei)
+                        @php
+                            $isLinkable = !empty($lei['id']);
+                        @endphp
+
+                        @if($isLinkable)
+                            <a href="{{ route('materias.show', [$cidade['slug'], $lei['id']]) }}" class="group flex items-center justify-between p-5 border-b border-slate-100 hover:bg-slate-50 transition-colors last:border-0">
+                        @else
+                            <div class="group flex items-center justify-between p-5 border-b border-slate-100 last:border-0">
+                        @endif
+
                             <div class="flex-grow pr-4">
-                                <h3 class="font-semibold text-slate-700 group-hover:text-blue-600 transition-colors line-clamp-2">{{ $lei['titulo'] }}</h3>
+                                <h3 class="font-semibold text-slate-700 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                    {{ $lei['titulo'] }}
+                                </h3>
                                 <div class="flex gap-3 mt-2">
-                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase">{{ $lei['tipo'] }}</span>
-                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded uppercase">Acessado recentemente</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase">
+                                        {{ $lei['tipo'] ?? 'Desconhecido' }}
+                                    </span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded uppercase">
+                                        Acessado recentemente
+                                    </span>
                                 </div>
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-300 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </a>
+
+                            @if($isLinkable)
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-300 group-hover:text-blue-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            @endif
+
+                        @if($isLinkable)
+                            </a>
+                        @else
+                            </div>
+                        @endif
                     @empty
-                        <div class="p-10 text-center text-slate-400">Nenhum dado disponível.</div>
+                        <div class="p-10 text-center text-slate-400">
+                            Nenhum dado disponível no momento.
+                        </div>
                     @endforelse
                 </div>
             </section>
 
-            {{-- Parlamentares (4 colunas) --}}
+            {{-- Parlamentares Ativos (4 colunas) --}}
             <section class="lg:col-span-4">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-slate-800">Parlamentares</h2>
-                    <p class="text-sm text-slate-500">Atividade legislativa</p>
+                    <h2 class="text-2xl font-bold text-slate-800">Parlamentares Ativos</h2>
+                    <p class="text-sm text-slate-500">Top 5 por quantidade de matérias apresentadas na legislatura atual</p>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                    @forelse($autoresMaisBuscados ?? [] as $autor)
+                    @forelse($topAutoresAtivos as $autor)
                         <div class="p-4 border-b border-slate-100 last:border-0 flex items-center gap-4 hover:bg-slate-50 transition-colors">
                             <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
                                 {{ strtoupper(substr($autor['nome'], 0, 1)) }}
                             </div>
-                            <div>
-                                <a href="{{ $autor['url'] }}" class="font-bold text-slate-700 hover:text-blue-600 block">{{ $autor['nome'] }}</a>
-                                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">{{ $autor['partido'] ?? 'Sem Partido' }}</span>
+                            <div class="flex-grow">
+                                <a href="{{ $autor['url'] }}" target="_blank" class="font-bold text-slate-700 hover:text-blue-600 block">
+                                    {{ $autor['nome'] }}
+                                </a>
+                                <div class="flex justify-between items-center mt-1">
+                                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">
+                                        {{ $autor['partido'] }}
+                                    </span>
+                                    <span class="text-xs font-bold text-blue-600">
+                                        {{ number_format($autor['quantidade_materias'], 0, ',', '.') }} matérias
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     @empty
-                        <div class="p-10 text-center text-slate-400 italic">Sem registros.</div>
+                        <div class="p-10 text-center text-slate-400 italic">
+                            Dados em atualização para a legislatura atual.
+                        </div>
                     @endforelse
+
                     <a href="{{ route('cidade.autores', $cidade['slug']) }}" class="block p-4 bg-slate-50 text-center text-sm font-bold text-slate-600 hover:text-blue-600 border-t border-slate-100">
                         Ver lista completa de vereadores
                     </a>

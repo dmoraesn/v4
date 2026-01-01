@@ -21,14 +21,16 @@ class Cidade extends Model
         'sapl',
         'brasao',
         'total_leis',
+        'total_parlamentares', // Novo campo fixo
     ];
 
     protected $casts = [
         'total_leis' => 'integer',
+        'total_parlamentares' => 'integer',
     ];
 
     protected $allowedSorts = [
-        'slug', 'nome', 'uf', 'total_leis', 'created_at', 'updated_at',
+        'slug', 'nome', 'uf', 'total_leis', 'total_parlamentares', 'created_at', 'updated_at',
     ];
 
     /**

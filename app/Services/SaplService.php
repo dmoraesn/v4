@@ -13,23 +13,19 @@ class SaplService
 {
     protected string $baseUrl;
     protected int $pageSize = 10;
-
     protected SaplClient $client;
     protected AutorResolver $autorResolver;
 
     public function __construct(string $baseUrl)
     {
         $this->baseUrl = rtrim($baseUrl, '/');
-
         if (!str_ends_with($this->baseUrl, '/api')) {
             $this->baseUrl .= '/api';
         }
-
         /**
          * Cliente HTTP central
          */
         $this->client = new SaplClient($this->baseUrl);
-
         /**
          * Resolver de autores (parlamentar, órgão, comissão, etc.)
          */
@@ -62,15 +58,14 @@ class SaplService
     /**
      * Busca semântica local (texto + autoria).
      */
-    public function buscaSemanticaLocal(string $q, int $page = 1): array
+    public function buscaSemanticaLocal(string $q, int $page = 1, int $pageSize = null): array
     {
         // 1️⃣ Busca textual direta
-        $resultado = $this->buscarMateriasPorTexto($q, $page);
+        $resultado = $this->buscarMateriasPorTexto($q, $page, $pageSize);
 
         // 2️⃣ Fallback por autoria
         if (empty($resultado['results'])) {
             $materiaIds = $this->buscarMateriaIdsPorAutoria($q);
-
             if (!empty($materiaIds)) {
                 $resultado = $this->buscarMateriasPorIds($materiaIds, $page);
                 $resultado['fonte'] = 'autoria';
@@ -83,20 +78,22 @@ class SaplService
     /**
      * Busca textual simples.
      */
-    public function buscarMateriasPorTexto(string $q, int $page = 1): array
+    public function buscarMateriasPorTexto(string $q, int $page = 1, int $pageSize = null): array
     {
         if ($q === '') {
             return $this->emptyResponse($page);
         }
 
+        $pageSize = $pageSize ?? $this->pageSize;
+
         return $this->safeRequest(
-            cacheKey: "sapl:buscar:texto:" . md5($this->baseUrl . $q . $page),
+            cacheKey: "sapl:buscar:texto:" . md5($this->baseUrl . $q . $page . $pageSize),
             ttl: now()->addMinutes(5),
             endpoint: '/materia/materialegislativa/',
             params: [
                 'search' => $q,
                 'page' => $page,
-                'page_size' => $this->pageSize,
+                'page_size' => $pageSize,
                 'o' => '-data_apresentacao',
             ]
         );
@@ -136,8 +133,9 @@ class SaplService
             now()->addMinutes(30),
             function () use ($id) {
                 try {
-                    return Http::timeout(8)
-                        ->retry(2, 300)
+                    return Http::timeout(5)
+                        ->connectTimeout(5)
+                        ->retry(3, 500)
                         ->get("{$this->baseUrl}/materia/materialegislativa/{$id}/")
                         ->json() ?? [];
                 } catch (Throwable $e) {
@@ -197,9 +195,7 @@ class SaplService
         }
 
         foreach ($resultado['results'] as &$materia) {
-            $autores = $this->autorResolver
-                ->resolveAutoresDaMateria($materia['id']);
-
+            $autores = $this->autorResolver->resolveAutoresDaMateria($materia['id']);
             $materia['autor'] = $autores[0] ?? null;
             $materia['autores'] = $autores;
         }
@@ -219,8 +215,9 @@ class SaplService
     ): array {
         return Cache::remember($cacheKey, $ttl, function () use ($endpoint, $params) {
             try {
-                $response = Http::timeout(8)
-                    ->retry(2, 300)
+                $response = Http::timeout(5)
+                    ->connectTimeout(5)
+                    ->retry(3, 500) // 3 tentativas com backoff de 500ms
                     ->get($this->baseUrl . $endpoint, $params);
 
                 if (!$response->successful()) {
@@ -228,7 +225,6 @@ class SaplService
                         'endpoint' => $endpoint,
                         'status' => $response->status(),
                     ]);
-
                     return $this->emptyResponse((int) ($params['page'] ?? 1));
                 }
 
@@ -241,7 +237,6 @@ class SaplService
                     'endpoint' => $endpoint,
                     'error' => $e->getMessage(),
                 ]);
-
                 return $this->emptyResponse((int) ($params['page'] ?? 1));
             }
         });
