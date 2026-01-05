@@ -3,18 +3,19 @@
 namespace App\Orchid\Screens;
 
 use App\Models\Cidade;
+use Orchid\Screen\Actions\Button;
+use Orchid\Screen\Actions\DropDown;
+use Orchid\Screen\Actions\Link;
 use Orchid\Screen\Screen;
 use Orchid\Screen\TD;
 use Orchid\Support\Facades\Layout;
-use Orchid\Screen\Actions\Link;
-use Orchid\Screen\Actions\Button;
-use Orchid\Screen\Actions\DropDown;
 use Orchid\Support\Facades\Toast;
 
 class CidadeListScreen extends Screen
 {
     /**
      * Busca os dados das cidades.
+     *
      * @return array
      */
     public function query(): array
@@ -29,6 +30,7 @@ class CidadeListScreen extends Screen
 
     /**
      * Nome da tela.
+     *
      * @return string|null
      */
     public function name(): ?string
@@ -38,6 +40,7 @@ class CidadeListScreen extends Screen
 
     /**
      * Descrição da tela.
+     *
      * @return string|null
      */
     public function description(): ?string
@@ -47,6 +50,7 @@ class CidadeListScreen extends Screen
 
     /**
      * Botões de ação globais.
+     *
      * @return array
      */
     public function commandBar(): array
@@ -59,7 +63,8 @@ class CidadeListScreen extends Screen
     }
 
     /**
-     * Layout da tabela simples (Sem brasão).
+     * Layout da tabela.
+     *
      * @return array
      */
     public function layout(): array
@@ -68,16 +73,17 @@ class CidadeListScreen extends Screen
             Layout::table('cidades', [
                 TD::make('nome', 'Cidade')
                     ->sort()
+                    ->filter(TD::FILTER_TEXT)
                     ->render(fn (Cidade $cidade) => "<strong>{$cidade->nome}</strong>"),
 
                 TD::make('uf', 'UF')
                     ->sort()
                     ->align(TD::ALIGN_CENTER),
 
-                TD::make('total_leis', 'Matérias')
+                TD::make('total_leis_local', 'Matérias')
                     ->sort()
                     ->align(TD::ALIGN_CENTER)
-                    ->render(fn (Cidade $cidade) => number_format($cidade->total_leis, 0, ',', '.')),
+                    ->render(fn (Cidade $cidade) => number_format($cidade->total_leis_local ?? 0, 0, ',', '.')),
 
                 TD::make('sapl', 'Link SAPL')
                     ->render(fn (Cidade $cidade) => Link::make('Acessar')
@@ -86,7 +92,7 @@ class CidadeListScreen extends Screen
                         ->icon('bs.box-arrow-up-right')
                         ->class('btn btn-link text-primary p-0')),
 
-                TD::make('Ações')
+                TD::make(__('Ações'))
                     ->align(TD::ALIGN_RIGHT)
                     ->render(fn (Cidade $cidade) => DropDown::make()
                         ->icon('bs.three-dots-vertical')
@@ -108,7 +114,9 @@ class CidadeListScreen extends Screen
 
     /**
      * Método para remover a cidade diretamente da listagem.
+     *
      * @param int $id
+     * @return void
      */
     public function remove(int $id): void
     {

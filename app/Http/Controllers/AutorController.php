@@ -2,31 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Sapl\SaplAutoresService;
+use App\Models\Cidade;
+use App\Models\Parlamentar;
 use Illuminate\Support\Facades\Cache;
 
 class AutorController extends Controller
 {
-    public function index(string $cidade)
+    /**
+     * Exibe a lista de parlamentares da cidade.
+     *
+     * Agora consulta diretamente o banco local (tabela parlamentar),
+     * filtrando apenas os ativos e ordenando alfabeticamente.
+     */
+    public function index(string $cidadeSlug)
     {
-        $cidades = Cache::get('cidades');
+        $cidade = Cidade::where('slug', $cidadeSlug)->firstOrFail();
 
-        abort_unless(isset($cidades[$cidade]), 404);
+        // Parlamentares ativos da cidade (ordenados por nome)
+        $parlamentares = Parlamentar::where('cidade_id', $cidade->id)
+            ->where('ativo', true)
+            ->orderBy('nome_parlamentar')
+            ->get();
 
-        $cidadeData = $cidades[$cidade];
-        $cidadeData['slug'] = $cidade;
-
-        $saplService = new SaplAutoresService($cidadeData['sapl']);
-
-        $autores = Cache::remember(
-            "cidade:{$cidade}:autores",
-            now()->addHours(6),
-            fn () => $saplService->listarAutores()
-        );
+        $parlamentaresAtivos = $parlamentares->count();
 
         return view('cidade.autores', [
-            'cidade'  => $cidadeData,
-            'autores' => $autores,
+            'cidade' => $cidade,
+            'parlamentares' => $parlamentares,
+            'parlamentaresAtivos' => $parlamentaresAtivos,
         ]);
     }
 }

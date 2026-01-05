@@ -1,23 +1,25 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
+    /**
+     * Executa a migration.
+     *
+     * Esta migration foi desativada porque o índice já existe no Laravel padrão.
+     * Mantida apenas para não quebrar o histórico de migrations.
+     */
     public function up(): void
     {
-        Schema::table('notifications', function (Blueprint $table) {
-            $table->index(['notifiable_type', 'notifiable_id']);
-            $table->index('read_at');
-        });
+        // Índice já existente no framework — nada a fazer
     }
 
+    /**
+     * Reverte a migration.
+     */
     public function down(): void
     {
-        Schema::table('notifications', function (Blueprint $table) {
-            $table->dropIndex(['notifiable_type', 'notifiable_id']);
-            $table->dropIndex(['read_at']);
-        });
+        // Nada a reverter
     }
 };

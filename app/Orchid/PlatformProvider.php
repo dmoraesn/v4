@@ -21,72 +21,48 @@ class PlatformProvider extends OrchidServiceProvider
     public function boot(Dashboard $dashboard): void
     {
         parent::boot($dashboard);
-
-        // Não registrar rotas customizadas aqui.
-        // Todas as rotas de screens devem ser definidas em routes/platform.php
     }
 
     /**
-     * Register the application menu.
+     * Registra os itens do menu lateral do painel Orchid.
      *
      * @return Menu[]
      */
     public function menu(): array
     {
         return [
-            // Navigation
-            Menu::make('Get Started')
-                ->icon('bs.book')
-                ->title('Navigation')
-                ->route(config('platform.index')),
+            // Grupo principal: Inteligência Legislativa (BI)
+            Menu::make('Inteligência Legislativa (BI)')
+                ->icon('bs.graph-up-arrow')
+                ->title('Inteligência Legislativa (BI)')
+                ->route('platform.cidade.list'),
 
-            Menu::make('Sample Screen')
-                ->icon('bs.collection')
-                ->route('platform.example')
-                ->badge(fn () => 6),
+            Menu::make('Cidades Indexadas')
+                ->icon('bs.building')
+                ->route('platform.cidade.list'),
 
-            Menu::make('Form Elements')
-                ->icon('bs.card-list')
-                ->route('platform.example.fields')
-                ->active('*/examples/form/*'),
+            Menu::make('Parlamentares')
+                ->icon('bs.people')
+                ->route('platform.parlamentar.dashboard'), // Alterado para o novo dashboard com cards por cidade
 
-            Menu::make('Layouts Overview')
-                ->icon('bs.window-sidebar')
-                ->route('platform.example.layouts'),
-
-            Menu::make('Grid System')
-                ->icon('bs.columns-gap')
-                ->route('platform.example.grid'),
-
-            Menu::make('Charts')
-                ->icon('bs.bar-chart')
-                ->route('platform.example.charts'),
-
-            Menu::make('Cards')
-                ->icon('bs.card-text')
-                ->route('platform.example.cards')
+            Menu::make('Partidos')
+                ->icon('bs.flag')
+                ->route('platform.partido.list')
                 ->divider(),
 
-            // Access Controls
+            // Grupo: Configurações
             Menu::make(__('Users'))
-                ->icon('bs.people')
+                ->icon('bs.person')
                 ->route('platform.systems.users')
                 ->permission('platform.systems.users')
-                ->title(__('Access Controls')),
+                ->title(__('Configurações')),
 
             Menu::make(__('Roles'))
                 ->icon('bs.shield')
                 ->route('platform.systems.roles')
-                ->permission('platform.systems.roles')
-                ->divider(),
+                ->permission('platform.systems.roles'),
 
-            // Configurações do Sistema
-            Menu::make('Cidades Indexadas')
-                ->icon('bs.building')
-                ->route('platform.cidade.list')
-                ->title('Configurações do Sistema'),
-
-            // Docs
+            // Documentação
             Menu::make('Documentation')
                 ->title('Docs')
                 ->icon('bs.box-arrow-up-right')
@@ -102,7 +78,7 @@ class PlatformProvider extends OrchidServiceProvider
     }
 
     /**
-     * Register permissions for the application.
+     * Registra as permissões do sistema.
      *
      * @return ItemPermission[]
      */

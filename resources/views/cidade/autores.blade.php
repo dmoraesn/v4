@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Vereadores de {{ $cidade['nome'] }} — BuscaLeis</title>
+    <title>Parlamentares de {{ $cidade->nome }} — BuscaLeis</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -54,6 +54,9 @@
             border-radius: 20px;
             box-shadow: var(--shadow-sm);
             margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .header h1 {
@@ -68,6 +71,15 @@
             color: var(--text-light);
         }
 
+        .header .badge {
+            background: #10b981;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
         /* Busca */
         .search-box {
             margin: 24px 0 40px;
@@ -80,6 +92,11 @@
             border: 1px solid var(--border);
             font-size: 15px;
             outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 85, 255, 0.1);
         }
 
         /* Seções */
@@ -120,6 +137,11 @@
             display: flex;
             align-items: center;
             gap: 14px;
+            transition: background 0.2s;
+        }
+
+        .item:hover {
+            background: #f8fafc;
         }
 
         .item:last-child {
@@ -127,8 +149,8 @@
         }
 
         .avatar {
-            width: 38px;
-            height: 38px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             background: var(--primary);
             color: #fff;
@@ -136,17 +158,29 @@
             align-items: center;
             justify-content: center;
             font-weight: 700;
+            font-size: 18px;
+        }
+
+        .item-info {
+            flex: 1;
         }
 
         .item a {
             text-decoration: none;
             color: var(--text-dark);
-            font-weight: 500;
-            font-size: 15px;
+            font-weight: 600;
+            font-size: 16px;
         }
 
         .item a:hover {
             color: var(--primary);
+        }
+
+        .item .partido {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+            font-weight: 600;
         }
 
         /* Empty state */
@@ -166,81 +200,91 @@
     </style>
 </head>
 <body>
-
 <div class="container">
-
     <div class="nav-back">
-        <a href="{{ route('cidade.home', $cidade['slug']) }}">← Voltar para {{ $cidade['nome'] }}</a>
+        <a href="{{ route('cidade.home', $cidade->slug) }}">← Voltar para {{ $cidade->nome }}</a>
     </div>
 
     <header class="header">
-        <h1>Vereadores de {{ $cidade['nome'] }}</h1>
-        <p>Conheça os parlamentares que propõem e votam as leis do município.</p>
+        <div>
+            <h1>Parlamentares de {{ $cidade->nome }}</h1>
+            <p>Conheça os parlamentares que propõem e votam as leis do município.</p>
+        </div>
+        <div class="badge">
+            {{ $parlamentaresAtivos }} ativos
+        </div>
     </header>
 
     <div class="search-box">
         <input
             type="text"
-            placeholder="Buscar vereador por nome (em breve)"
-            disabled
+            id="busca-parlamentar"
+            placeholder="Buscar parlamentar por nome ou partido..."
+            autocomplete="off"
         >
     </div>
 
-    {{-- Destaque --}}
+    {{-- Lista completa de parlamentares ativos --}}
     <section class="section">
         <div class="section-title">
-            <h2>Vereadores em destaque</h2>
-            <span>mais buscados</span>
+            <h2>Todos os parlamentares ativos</h2>
+            <span>base oficial da Câmara • atualizado automaticamente</span>
         </div>
 
         <div class="list">
-            <div class="empty">
-                Em breve você verá aqui os vereadores mais acessados e ativos da cidade.
-            </div>
-        </div>
-    </section>
+            @forelse($parlamentares as $parlamentar)
+                @php
+                    $slugParlamentar = \Illuminate\Support\Str::slug($parlamentar->nome_parlamentar);
+                @endphp
 
-    {{-- Lista completa --}}
-    <section class="section">
-        <div class="section-title">
-            <h2>Todos os vereadores</h2>
-            <span>base oficial da Câmara</span>
-        </div>
-
-        <div class="list">
-            @forelse($autores as $autor)
-                <div class="item">
+                <div class="item" data-nome="{{ strtolower($parlamentar->nome_parlamentar . ' ' . ($parlamentar->filiacaoAtual?->partido_sigla ?? '')) }}">
                     <div class="avatar">
-                        {{ strtoupper(substr($autor['nome'], 0, 1)) }}
+                        {{ strtoupper(substr($parlamentar->nome_parlamentar, 0, 1)) }}
                     </div>
-                    <a href="{{ $autor['url'] }}" target="_blank">
-                        {{ $autor['nome'] }}
-                    </a>
+
+                    <div class="item-info">
+                        <a href="{{ route('parlamentar.show', ['cidade' => $cidade->slug, 'parlamentar' => $slugParlamentar]) }}">
+                            {{ $parlamentar->nome_parlamentar }}
+                        </a>
+
+                        <div class="partido">
+                            @if($parlamentar->filiacaoAtual)
+                                {{ $parlamentar->filiacaoAtual->partido_sigla }} - {{ $parlamentar->filiacaoAtual->partido_nome }}
+                            @else
+                                Sem partido
+                            @endif
+                        </div>
+                    </div>
                 </div>
-          @empty
-    <div class="empty">
-        <strong>Vereadores em fase de indexação</strong><br><br>
-
-        Estamos organizando e validando os dados dos parlamentares de 
-        <strong>{{ $cidade['nome'] }}</strong>.<br><br>
-
-        Em breve, esta página exibirá:
-        <ul style="margin: 10px 0 0 18px; text-align: left;">
-            <li>Ranking dos vereadores mais atuantes</li>
-            <li>Perfis individuais com histórico legislativo</li>
-            <li>Matérias e leis associadas a cada parlamentar</li>
-        </ul>
-    </div>
-@endforelse
-
+            @empty
+                <div class="empty">
+                    <strong>Nenhum parlamentar ativo encontrado</strong><br><br>
+                    Os dados estão sendo sincronizados. Tente novamente em alguns minutos.
+                </div>
+            @endforelse
         </div>
     </section>
 
     <footer>
         © {{ date('Y') }} BuscaLeis — Transparência e inteligência legislativa
     </footer>
-
 </div>
 
+<script>
+    // Busca client-side simples e instantânea (inclui partido na busca)
+    document.getElementById('busca-parlamentar').addEventListener('input', function(e) {
+        const termo = e.target.value.toLowerCase().trim();
+        const itens = document.querySelectorAll('.item');
+
+        itens.forEach(item => {
+            const texto = item.getAttribute('data-nome');
+            if (texto.includes(termo)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+</script>
 </body>
 </html>

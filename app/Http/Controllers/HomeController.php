@@ -4,83 +4,92 @@ namespace App\Http\Controllers;
 
 use App\Repositories\CidadeRepository;
 use App\Services\BuscaGlobalService;
+use App\Models\MateriaLegislativa;
+use App\Models\Cidade;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
 {
     protected CidadeRepository $cidadeRepository;
 
-    /**
-     * Injeção do repositório central de cidades.
-     * O repositório lida com o cache forever e a agregação de totais legislativos.
-     *
-     * @param CidadeRepository $cidadeRepository
-     */
     public function __construct(CidadeRepository $cidadeRepository)
     {
         $this->cidadeRepository = $cidadeRepository;
     }
 
-    /**
-     * Exibe a Home Global com o total real de documentos indexados.
-     *
-     * @return View
-     */
     public function index(): View
     {
-        // Recupera o catálogo de cidades (CacheForever no Repository)
-        $cidades = $this->cidadeRepository->all();
-        
-        // Recupera a soma de total_leis de todas as cidades (Cache no Repository)
-        $totalLeis = $this->cidadeRepository->getTotalGlobalLeis();
+        // 1. Total global de documentos
+        $totalLeis = Cache::remember('home.total_leis', 3600, function () {
+            return MateriaLegislativa::count();
+        });
 
-        return view('home.index', [
-            'cidades'   => $cidades,
-            'totalLeis' => $totalLeis
-        ]);
+        // 2. Total de cidades cadastradas
+        $totalCidades = Cache::remember('home.total_cidades', 3600, function () {
+            return Cidade::count();
+        });
+
+        // 3. Top 5 cidades (Nome ajustado para $cidadesPrincipais para bater com sua view)
+        $cidadesPrincipais = Cache::remember('home.top_cidades', 3600, function () {
+            return Cidade::query()
+                ->where('total_leis_local', '>', 0)
+                ->orderByDesc('total_leis_local')
+                ->take(5)
+                ->get();
+        });
+
+        // 4. Top 5 matérias mais acessadas
+        $materiasMaisAcessadas = Cache::remember('home.materias_mais_acessadas', 3600, function () {
+            return MateriaLegislativa::query()
+                ->with('cidade')
+                ->orderByDesc('acessos')
+                ->take(5)
+                ->get();
+        });
+
+        // Variável de compatibilidade
+        $totalMaterias = $totalLeis;
+
+        // IMPORTANTE: Alterado de 'welcome' para 'home.index'
+        return view('home.index', compact(
+            'totalLeis',
+            'totalCidades',
+            'totalMaterias',
+            'cidadesPrincipais',
+            'materiasMaisAcessadas'
+        ));
     }
 
-    /**
-     * Busca inteligente (Router de Contexto e Busca Global).
-     * * Estratégia: 
-     * 1. Se o termo bater com o nome de uma cidade cadastrada -> Redireciona para a home da cidade.
-     * 2. Caso contrário -> Executa a busca full-text em todos os municípios via BuscaGlobalService.
-     *
-     * @param Request $request
-     * @param BuscaGlobalService $buscaService
-     * @return View|RedirectResponse
-     */
-    public function buscar(Request $request, BuscaGlobalService $buscaService)
+    public function buscar(Request $request)
     {
-        $q = trim((string) $request->get('q', ''));
-        $page = max((int) $request->get('page', 1), 1);
+        $q = trim($request->get('q', ''));
+        $page = max(1, (int) $request->get('page', 1));
 
         if (empty($q)) {
             return redirect()->route('home');
         }
 
-        // 1. 🔁 Router de Contexto (Verifica se é o nome de uma cidade)
+        $buscaService = app(BuscaGlobalService::class);
+
         $cidades = $this->cidadeRepository->all();
         $searchQuery = Str::slug($q);
 
         foreach ($cidades as $slug => $cidade) {
-            // Comparamos o slug da busca com o slug da cidade ou nome normalizado
             if ($searchQuery === $slug || $searchQuery === Str::slug($cidade['nome'])) {
                 return redirect()->route('cidade.home', ['cidade' => $slug]);
             }
         }
 
-        // 2. 🔍 BUSCA GLOBAL REAL
-        // Se não for um redirecionamento de cidade, processa a busca full-text
         $resultado = $buscaService->buscar($q, $page);
 
         return view('busca.resultados', [
-            'q' => $q,
+            'q'          => $q,
             'resultados' => $resultado,
-            'cidades' => $cidades // Útil se precisar filtrar por cidade na view de resultados
+            'cidades'    => $cidades,
         ]);
     }
 }

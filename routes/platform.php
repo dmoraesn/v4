@@ -2,8 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Models\Parlamentar;
+use App\Models\Partido;
 use App\Orchid\Screens\CidadeEditScreen;
 use App\Orchid\Screens\CidadeListScreen;
+use App\Orchid\Screens\ParlamentarByCityListScreen;
+use App\Orchid\Screens\ParlamentarDashboardScreen;
+use App\Orchid\Screens\ParlamentarEditScreen;
+use App\Orchid\Screens\ParlamentarListScreen;
+use App\Orchid\Screens\PartidoEditScreen;
+use App\Orchid\Screens\PartidoListScreen;
 use App\Orchid\Screens\Examples\ExampleActionsScreen;
 use App\Orchid\Screens\Examples\ExampleCardsScreen;
 use App\Orchid\Screens\Examples\ExampleChartsScreen;
@@ -27,23 +35,21 @@ use Tabuna\Breadcrumbs\Trail;
 | Dashboard Routes
 |--------------------------------------------------------------------------
 |
-| Rotas exclusivas do painel administrativo Orchid.
-| Todas recebem automaticamente o prefixo /admin e o middleware 'platform'.
+| Aqui são registradas as rotas do painel administrativo Orchid.
 |
 */
 
-// Main
 Route::screen('/main', PlatformScreen::class)
     ->name('platform.main');
 
-// Platform > Profile
+// Perfil do usuário
 Route::screen('profile', UserProfileScreen::class)
     ->name('platform.profile')
     ->breadcrumbs(fn (Trail $trail) => $trail
         ->parent('platform.index')
         ->push(__('Profile'), route('platform.profile')));
 
-// Platform > System > Users
+// Usuários do sistema
 Route::screen('users', UserListScreen::class)
     ->name('platform.systems.users')
     ->breadcrumbs(fn (Trail $trail) => $trail
@@ -62,7 +68,7 @@ Route::screen('users/{user}/edit', UserEditScreen::class)
         ->parent('platform.systems.users')
         ->push($user->name, route('platform.systems.users.edit', $user)));
 
-// Platform > System > Roles
+// Papéis (Roles)
 Route::screen('roles', RoleListScreen::class)
     ->name('platform.systems.roles')
     ->breadcrumbs(fn (Trail $trail) => $trail
@@ -81,42 +87,66 @@ Route::screen('roles/{role}/edit', RoleEditScreen::class)
         ->parent('platform.systems.roles')
         ->push($role->name, route('platform.systems.roles.edit', $role)));
 
-// Examples
-Route::screen('example', ExampleScreen::class)
-    ->name('platform.example')
-    ->breadcrumbs(fn (Trail $trail) => $trail
-        ->parent('platform.index')
-        ->push('Example Screen'));
-
-Route::screen('/examples/form/fields', ExampleFieldsScreen::class)->name('platform.example.fields');
-Route::screen('/examples/form/advanced', ExampleFieldsAdvancedScreen::class)->name('platform.example.advanced');
-Route::screen('/examples/form/editors', ExampleTextEditorsScreen::class)->name('platform.example.editors');
-Route::screen('/examples/form/actions', ExampleActionsScreen::class)->name('platform.example.actions');
-
-Route::screen('/examples/layouts', ExampleLayoutsScreen::class)->name('platform.example.layouts');
-Route::screen('/examples/grid', ExampleGridScreen::class)->name('platform.example.grid');
-Route::screen('/examples/charts', ExampleChartsScreen::class)->name('platform.example.charts');
-Route::screen('/examples/cards', ExampleCardsScreen::class)->name('platform.example.cards');
-
-// --- Módulo: Cidades Indexadas ---
-
-// Listagem de Cidades
+// Cidades Indexadas
 Route::screen('cidades', CidadeListScreen::class)
     ->name('platform.cidade.list')
     ->breadcrumbs(fn (Trail $trail) => $trail
         ->parent('platform.index')
         ->push('Cidades Indexadas', route('platform.cidade.list')));
 
-// Criar Nova Cidade
 Route::screen('cidades/create', CidadeEditScreen::class)
     ->name('platform.cidade.create')
     ->breadcrumbs(fn (Trail $trail) => $trail
         ->parent('platform.cidade.list')
         ->push('Criar Nova Cidade', route('platform.cidade.create')));
 
-// Editar Cidade Existente
 Route::screen('cidades/{cidade}/edit', CidadeEditScreen::class)
     ->name('platform.cidade.edit')
     ->breadcrumbs(fn (Trail $trail, $cidade) => $trail
         ->parent('platform.cidade.list')
         ->push("Editar {$cidade->nome}", route('platform.cidade.edit', $cidade)));
+
+// Parlamentares - Nova estrutura com dashboard
+Route::screen('parlamentar/dashboard', ParlamentarDashboardScreen::class)
+    ->name('platform.parlamentar.dashboard')
+    ->breadcrumbs(fn (Trail $trail) => $trail
+        ->parent('platform.index')
+        ->push('Parlamentares', route('platform.parlamentar.dashboard')));
+
+Route::screen('parlamentar/cidade/{cidade}', ParlamentarByCityListScreen::class)
+    ->name('platform.parlamentar.list.by.city')
+    ->breadcrumbs(fn (Trail $trail, $cidade) => $trail
+        ->parent('platform.parlamentar.dashboard')
+        ->push("Parlamentares - {$cidade->nome} / {$cidade->uf}", route('platform.parlamentar.list.by.city', $cidade)));
+
+// Rotas de criação e edição de parlamentares (mantidas para funcionalidade completa)
+Route::screen('parlamentares/create', ParlamentarEditScreen::class)
+    ->name('platform.parlamentar.create')
+    ->breadcrumbs(fn (Trail $trail) => $trail
+        ->parent('platform.parlamentar.dashboard')
+        ->push('Criar Parlamentar', route('platform.parlamentar.create')));
+
+Route::screen('parlamentares/{parlamentar}/edit', ParlamentarEditScreen::class)
+    ->name('platform.parlamentar.edit')
+    ->breadcrumbs(fn (Trail $trail, Parlamentar $parlamentar) => $trail
+        ->parent('platform.parlamentar.dashboard')
+        ->push("Editar {$parlamentar->nome_parlamentar}", route('platform.parlamentar.edit', $parlamentar)));
+
+// Partidos Políticos
+Route::screen('partidos', PartidoListScreen::class)
+    ->name('platform.partido.list')
+    ->breadcrumbs(fn (Trail $trail) => $trail
+        ->parent('platform.index')
+        ->push('Partidos', route('platform.partido.list')));
+
+Route::screen('partidos/create', PartidoEditScreen::class)
+    ->name('platform.partido.create')
+    ->breadcrumbs(fn (Trail $trail) => $trail
+        ->parent('platform.partido.list')
+        ->push('Criar Partido', route('platform.partido.create')));
+
+Route::screen('partidos/{partido}/edit', PartidoEditScreen::class)
+    ->name('platform.partido.edit')
+    ->breadcrumbs(fn (Trail $trail, Partido $partido) => $trail
+        ->parent('platform.partido.list')
+        ->push("Editar {$partido->nome}", route('platform.partido.edit', $partido)));

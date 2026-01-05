@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Cache;
 use App\Models\Cidade;
-use App\Services\SaplService;
-use App\Services\Sapl\SaplAutoresService;
+use App\Models\MateriaLegislativa;
+use App\Models\Parlamentar;
 
 class CidadeController extends Controller
 {
     /**
      * Exibe o dashboard da cidade específica.
      *
-     * Carrega dados reais do SAPL com cache otimizado para evitar timeouts:
-     * - Estatísticas gerais.
-     * - Leis estruturais mais relevantes.
-     * - Total e top 5 parlamentares ativos da legislatura atual.
+     * Utiliza dados do banco local sincronizado:
+     * - Total de matérias e leis/normas.
+     * - Parlamentares ativos.
+     * - Top 5 parlamentares por quantidade de matérias apresentadas.
+     * - Leis mais relevantes (fallback para termos estruturais).
      *
      * @param string $cidade Slug da cidade
      */
@@ -24,97 +24,49 @@ class CidadeController extends Controller
         /** @var Cidade $cidadeModel */
         $cidadeModel = Cidade::where('slug', $cidade)->firstOrFail();
 
-        $cidadeArray = [
-            'id'     => $cidadeModel->id,
-            'slug'   => $cidadeModel->slug,
-            'nome'   => $cidadeModel->nome,
-            'uf'     => $cidadeModel->uf,
-            'sapl'   => $cidadeModel->sapl,
-            'brasao' => $cidadeModel->brasao_url,
-        ];
+        // Total de matérias
+        $totalMaterias = MateriaLegislativa::where('cidade_id', $cidadeModel->id)->count();
 
-        $saplService    = new SaplService($cidadeModel->sapl);
-        $autoresService = new SaplAutoresService($cidadeModel->sapl);
+        // Total de leis e normas (tipos relevantes)
+        $totalLeisNormas = MateriaLegislativa::where('cidade_id', $cidadeModel->id)
+            ->whereIn('tipo_sigla', ['LEI', 'LCP', 'DEC', 'EMENDA', 'RES'])
+            ->count();
 
-        $stats = Cache::remember(
-            "cidade:{$cidadeModel->id}:stats",
-            now()->addHours(6),
-            function () use ($saplService, $autoresService) {
-                $responseMaterias = $saplService->listarMaterias(1);
-                $totalMaterias    = $responseMaterias['pagination']['total_entries'] ?? 0;
+        // Total de parlamentares ativos
+        $totalParlamentaresAtivos = Parlamentar::where('cidade_id', $cidadeModel->id)
+            ->where('ativo', true)
+            ->count();
 
-                $totalAutores = $autoresService->totalAutoresAtivos();
+        // Top 5 parlamentares por quantidade de matérias apresentadas
+        $topParlamentares = Parlamentar::where('cidade_id', $cidadeModel->id)
+            ->with(['filiacaoAtual'])
+            ->withCount('materias') // Usa o relacionamento materias()
+            ->orderByDesc('materias_count')
+            ->limit(5)
+            ->get();
 
-                return [
-                    'total_materias' => $totalMaterias,
-                    'total_leis'     => $totalMaterias, // Aproximação conservadora
-                    'total_autores'  => $totalAutores,
-                ];
-            }
-        );
+        // Leis mais acessadas (ou fallback estrutural)
+        $leisMaisAcessadas = MateriaLegislativa::where('cidade_id', $cidadeModel->id)
+            ->orderByDesc('acessos')
+            ->limit(10)
+            ->get();
 
-        $leisMaisAcessadas = Cache::remember(
-            "cidade:{$cidadeModel->id}:leis_relevantes",
-            now()->addHours(12),
-            function () use ($saplService) {
-                $termos = [
-                    'Lei Orgânica',
-                    'Plano Diretor',
-                    'Código Tributário',
-                    'Código de Obras',
-                    'Zoneamento',
-                    'Lei de Uso e Ocupação do Solo',
-                    'Regimento Interno',
-                    'LDO',
-                    'LOA',
-                    'PPA',
-                ];
-
-                $leisEncontradas = [];
-
-                foreach ($termos as $termo) {
-                    $response = $saplService->buscaSemanticaLocal($termo, 1, 5);
-                    foreach ($response['results'] ?? [] as $materia) {
-                        $tipo = $materia['tipo']['descricao'] ?? $materia['tipo']['sigla'] ?? 'Desconhecido';
-
-                        $leisEncontradas[] = [
-                            'id'     => $materia['id'],
-                            'titulo' => $materia['ementa'] ?: "Matéria {$materia['numero']}/{$materia['ano']}",
-                            'tipo'   => $tipo,
-                        ];
-                    }
-                }
-
-                $leisUnicas = collect($leisEncontradas)->unique('id')->take(10)->values()->all();
-
-                if (empty($leisUnicas)) {
-                    return [
-                        ['id' => null, 'titulo' => 'Lei Orgânica do Município', 'tipo' => 'Lei Orgânica'],
-                        ['id' => null, 'titulo' => 'Plano Diretor Participativo', 'tipo' => 'Lei Complementar'],
-                        ['id' => null, 'titulo' => 'Código Tributário Municipal', 'tipo' => 'Lei Complementar'],
-                    ];
-                }
-
-                return $leisUnicas;
-            }
-        );
-
-        $totalAutoresAtivos = $autoresService->totalAutoresAtivos();
-
-        $topAutoresAtivos = Cache::remember(
-            "cidade:{$cidadeModel->id}:autores_top5",
-            now()->addHours(6),
-            function () use ($autoresService) {
-                return $autoresService->listarAutoresAtivosComQuantidadeMaterias(5);
-            }
-        );
+        // Fallback caso não haja acessos registrados
+        if ($leisMaisAcessadas->isEmpty()) {
+            $leisMaisAcessadas = collect([
+                (object) ['id' => null, 'ementa' => 'Lei Orgânica do Município', 'tipo_sigla' => 'Lei Orgânica'],
+                (object) ['id' => null, 'ementa' => 'Plano Diretor Participativo', 'tipo_sigla' => 'Lei Complementar'],
+                (object) ['id' => null, 'ementa' => 'Código Tributário Municipal', 'tipo_sigla' => 'Lei Complementar'],
+            ]);
+        }
 
         return view('cidade.home', [
-            'cidade'              => $cidadeArray,
-            'stats'               => $stats,
-            'totalAutoresAtivos'  => $totalAutoresAtivos,
-            'leisMaisAcessadas'    => $leisMaisAcessadas,
-            'topAutoresAtivos'    => $topAutoresAtivos,
+            'cidade'                  => $cidadeModel,
+            'totalMaterias'           => $totalMaterias,
+            'totalLeisNormas'         => $totalLeisNormas,
+            'totalParlamentaresAtivos'=> $totalParlamentaresAtivos,
+            'topParlamentares'        => $topParlamentares,
+            'leisMaisAcessadas'       => $leisMaisAcessadas,
         ]);
     }
 }

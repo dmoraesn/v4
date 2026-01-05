@@ -5,7 +5,8 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\CidadeController;
 use App\Http\Controllers\MateriaController;
 use App\Http\Controllers\AutorController;
-use App\Http\Controllers\CidadePublicController; // Novo controller para listagem pública
+use App\Http\Controllers\CidadePublicController;
+use App\Http\Controllers\ParlamentarController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +64,7 @@ Route::get('/cidades', [CidadePublicController::class, 'index'])
 Route::prefix('{cidade}')
     ->where(['cidade' => '[a-z0-9\-]+'])
     ->group(function () {
+
         /*
         |--------------------------------------------------------------------------
         | HOME DA CIDADE
@@ -110,4 +112,14 @@ Route::prefix('{cidade}')
         */
         Route::get('/autores', [AutorController::class, 'index'])
             ->name('cidade.autores');
+
+        /*
+        |--------------------------------------------------------------------------
+        | PERFIL INDIVIDUAL DO PARLAMENTAR
+        |--------------------------------------------------------------------------
+        | Exemplo: /sao-goncalo-do-amarante/parlamentar/joao-da-silva
+        */
+        Route::get('/parlamentar/{parlamentar}', [ParlamentarController::class, 'show'])
+            ->where(['parlamentar' => '[a-z0-9\-]+'])
+            ->name('parlamentar.show');
     });

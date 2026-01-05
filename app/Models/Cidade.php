@@ -1,80 +1,74 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
-use Orchid\Screen\AsSource;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Orchid\Attachment\Attachable;
 use Orchid\Filters\Filterable;
-use App\Services\SaplService;
-use Illuminate\Support\Str;
+use Orchid\Screen\AsSource;
+// Importação das classes de filtro do Orchid
+use Orchid\Filters\Types\Like;
+use Orchid\Filters\Types\Where;
 
 class Cidade extends Model
 {
-    use AsSource, Filterable;
+    use AsSource, Filterable, Attachable;
 
+    /**
+     * Nome da tabela associada ao modelo.
+     *
+     * @var string
+     */
+    protected $table = 'cidades';
+
+    /**
+     * Atributos que podem ser atribuídos em massa.
+     *
+     * @var array<string>
+     */
     protected $fillable = [
-        'slug',
         'nome',
+        'slug',
         'uf',
         'sapl',
         'brasao',
-        'total_leis',
-        'total_parlamentares', // Novo campo fixo
-    ];
-
-    protected $casts = [
-        'total_leis' => 'integer',
-        'total_parlamentares' => 'integer',
-    ];
-
-    protected $allowedSorts = [
-        'slug', 'nome', 'uf', 'total_leis', 'total_parlamentares', 'created_at', 'updated_at',
     ];
 
     /**
-     * Accessor que resolve o problema do brasão em qualquer ambiente (Windows/Linux)
+     * Relacionamento: uma cidade possui muitos parlamentares.
+     *
+     * @return HasMany
      */
-    public function getBrasaoUrlAttribute(): ?string
+    public function parlamentares(): HasMany
     {
-        if (empty($this->brasao)) {
-            return null;
-        }
-
-        if (filter_var($this->brasao, FILTER_VALIDATE_URL)) {
-            return $this->brasao;
-        }
-
-        // Limpa o caminho: converte \ em / e remove prefixos de sistema de arquivos
-        $cleanPath = str_replace(['\\', 'storage/app/public/', 'storage\app\public\\'], ['/', '', ''], $this->brasao);
-        
-        return asset('storage/' . ltrim($cleanPath, '/'));
+        return $this->hasMany(Parlamentar::class, 'cidade_id');
     }
 
-    public function getTotalLeisAttribute(): int
-    {
-        $cacheKey = "cidade:{$this->id}:total_leis";
-        return Cache::remember($cacheKey, now()->addHours(6), function () {
-            try {
-                if (empty($this->sapl)) return (int) ($this->attributes['total_leis'] ?? 0);
-                $sapl = new SaplService($this->sapl);
-                $response = $sapl->listarMaterias(1);
-                $total = (int) ($response['pagination']['total_entries'] ?? 0);
-                $this->updateQuietly(['total_leis' => $total]);
-                return $total;
-            } catch (\Throwable $e) {
-                return (int) ($this->attributes['total_leis'] ?? 0);
-            }
-        });
-    }
+    /**
+     * Colunas permitidas para ordenação padrão.
+     *
+     * @var array<string>
+     */
+    protected $allowedSorts = [
+        'nome',
+        'uf',
+        'total_leis_local', // Adicionei aqui pois você usa sort() nessa coluna na Screen
+        'created_at',
+        'updated_at',
+    ];
 
-    protected static function booted()
-    {
-        static::saving(function (Cidade $cidade) {
-            if (empty($cidade->slug)) {
-                $cidade->slug = Str::slug($cidade->nome . '-' . $cidade->uf);
-            }
-        });
-    }
+    /**
+     * Colunas permitidas para filtro.
+     * Agora mapeando para as classes de filtro corretas.
+     *
+     * @var array
+     */
+    protected $allowedFilters = [
+        'nome' => Like::class,  // Busca parcial (SQL LIKE %...%)
+        'uf'   => Where::class, // Busca exata (SQL =)
+        'slug' => Like::class,
+    ];
 }
